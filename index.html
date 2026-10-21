@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>マイスコア</title>
+
+  <!-- ⛳️ PWA & ホーム画面追加 (iPhone 17 iOS Safari / Pixel 10a Android Chrome 完全対応) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- iOS Safari / Android Chrome フルスクリーン（アドレスバー非表示）設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="マイスコア">
+  <meta name="application-name" content="マイスコア">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#2d6a4f">
+
+  <script>
+    (function() {
+      try {
+        var isStandalone = (window.navigator.standalone === true) ||
+                           (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        if (isStandalone) {
+          document.documentElement.classList.add('standalone-mode');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background-color: #1b4332;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    .app-frame-wrap {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      box-sizing: border-box;
+    }
+    @media all and (display-mode: standalone) {
+      .app-frame-wrap {
+        padding-top: max(40px, env(safe-area-inset-top, 40px));
+      }
+    }
+    html.standalone-mode .app-frame-wrap,
+    body.standalone-mode .app-frame-wrap {
+      padding-top: max(40px, env(safe-area-inset-top, 40px));
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      flex: 1;
+      border: none;
+      display: block;
+      background-color: #ffffff;
+    }
+
+    /* スプラッシュローディング画面 */
+    .splash {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 100;
+      transition: opacity 0.35s ease;
+    }
+    .splash.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .splash img {
+      width: 96px;
+      height: 96px;
+      border-radius: 22px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .splash-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 1px;
+    }
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: #ffd166;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 設定・PWAインストールモーダル */
+    .setup-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .setup-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 18px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    .setup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .setup-title {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #1b4332;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .setup-title img {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+    }
+    .setup-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: #868e96;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .setup-desc {
+      font-size: 0.78rem;
+      color: #495057;
+      line-height: 1.45;
+      margin-bottom: 10px;
+    }
+    .setup-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      margin-bottom: 10px;
+    }
+    .setup-btn {
+      width: 100%;
+      padding: 10px;
+      background: #2d6a4f;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 6px;
+    }
+    .install-pwa-btn {
+      width: 100%;
+      padding: 11px;
+      background: linear-gradient(135deg, #1971c2, #1864ab);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 10px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(25, 113, 194, 0.35);
+    }
+    .quick-actions {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #dee2e6;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .quick-title {
+      font-size: 0.74rem;
+      font-weight: bold;
+      color: #6c757d;
+    }
+    .quick-row {
+      display: flex;
+      gap: 6px;
+    }
+    .quick-btn {
+      flex: 1;
+      padding: 8px 6px;
+      border-radius: 6px;
+      border: 1px solid #ced4da;
+      background: #f8f9fa;
+      font-size: 0.78rem;
+      font-weight: bold;
+      color: #212529;
+      cursor: pointer;
+      text-align: center;
+    }
+    .gear-btn {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 6px) + 52px);
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      background: rgba(27, 67, 50, 0.75);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 16px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+      opacity: 0.7;
+    }
+    .install-tip {
+      margin-top: 10px;
+      padding: 8px 10px;
+      background: #fff9db;
+      border: 1px solid #ffe066;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      color: #d9480f;
+      line-height: 1.4;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- スプラッシュ画面 -->
+  <div class="splash" id="splashScreen">
+    <img src="icon-192.png" alt="マイスコア">
+    <div class="splash-title">マイスコア v1.0</div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- 設定・切替モーダル -->
+  <div class="setup-modal" id="setupModal">
+    <div class="setup-card">
+      <div class="setup-header">
+        <div class="setup-title"><img src="icon-192.png" alt="icon"> マイスコア 設定</div>
+        <button type="button" class="setup-close" onclick="closeSetupModal()">✕</button>
+      </div>
+
+      <!-- Android Chrome (Pixel 10a) ワンタップPWAインストールボタン -->
+      <button type="button" class="install-pwa-btn" id="btnInstallPwa" onclick="triggerPwaInstall()">
+        📲 ホーム画面にPWAアプリとして追加
+      </button>
+
+      <div class="setup-desc">
+        マイスコア v1.0 のGAS WebアプリURLが自動設定されています。
+      </div>
+      <input type="url" class="setup-input" id="inputGasUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      <button type="button" class="setup-btn" onclick="saveGasUrl()">💾 URLを保存して開く</button>
+
+      <!-- 画面切替 -->
+      <div class="quick-actions" id="quickActionsBox">
+        <div class="quick-title">📌 ページ切替・再読み込み</div>
+        <div class="quick-row">
+          <button type="button" class="quick-btn" onclick="switchPage('main')">⛳️ スコア</button>
+          <button type="button" class="quick-btn" onclick="switchPage('analytics')">📊 分析</button>
+          <button type="button" class="quick-btn" onclick="switchPage('handover')">📝 申し送り</button>
+        </div>
+        <button type="button" class="quick-btn" style="margin-top:2px;" onclick="reloadFrame()">🔄 最新状態に再読み込み</button>
+      </div>
+
+      <div class="install-tip" id="installTip">
+        💡 <b>ホーム画面への追加（専用アイコン＆全画面PWA化）</b><br>
+        ・<b>iPhone 17 (Safari)</b>: 下部の「共有」➔「ホーム画面に追加」<br>
+        ・<b>Pixel 10a (Chrome)</b>: 右上「⋮」➔「ホーム画面に追加（アプリをインストール）」
+      </div>
+    </div>
+  </div>
+
+  <!-- フローティング設定ボタン -->
+  <button type="button" class="gear-btn" onclick="openSetupModal()" title="設定・切替">⚙️</button>
+
+  <!-- メイン iframe -->
+  <div class="app-frame-wrap">
+    <iframe
+      id="appFrame"
+      src="about:blank"
+      allow="geolocation; vibration; clipboard-write; clipboard-read;"
+      onload="onFrameLoaded()">
+    </iframe>
+  </div>
+
+  <script>
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbxRNBWIhRi_lUI9jnzHMb48-w5ElyAz_vf2Bt-pF2D1q8d8_Kjdm1me77fYK3_PX1uo/exec";
+    const STORAGE_KEY = "MyScore_v1_PwaGasUrl";
+    let deferredInstallPrompt = null;
+
+    // Service Worker 登録 (Pixel 10a / Android Chrome の PWA インストール要件)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW registration warning:', err));
+      });
+    }
+
+    // Android Chrome ネイティブ PWA インストールプロンプト捕捉
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const btn = document.getElementById('btnInstallPwa');
+      if (btn) btn.style.display = 'flex';
+    });
+
+    async function triggerPwaInstall() {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      const btn = document.getElementById('btnInstallPwa');
+      if (btn) btn.style.display = 'none';
+    }
+
+    function getBaseUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const paramUrl = params.get('gasUrl') || params.get('url');
+      if (paramUrl) {
+        localStorage.setItem(STORAGE_KEY, paramUrl);
+        return paramUrl;
+      }
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return saved;
+      return DEFAULT_GAS_URL;
+    }
+
+    function buildUrlWithPage(base, page, extraParams) {
+      if (!base) return '';
+      const cleanBase = base.split('?')[0];
+      const params = new URLSearchParams(extraParams || '');
+      if (page === 'handover') {
+        params.set('page', 'handover');
+      } else if (page === 'analytics') {
+        params.set('view', 'analytics');
+      }
+      const qs = params.toString();
+      return qs ? (cleanBase + '?' + qs) : cleanBase;
+    }
+
+    function initPwa() {
+      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      if (!isStandalone) {
+        const tip = document.getElementById('installTip');
+        if (tip) tip.style.display = 'block';
+      }
+
+      const currentSearch = new URLSearchParams(window.location.search);
+      let requestedPage = currentSearch.get('page') || 'main';
+      if (currentSearch.get('view') === 'analytics' || requestedPage === 'analytics') {
+        requestedPage = 'analytics';
+      }
+
+      const base = getBaseUrl();
+      const target = buildUrlWithPage(base, requestedPage, window.location.search);
+      const frame = document.getElementById('appFrame');
+      frame.src = target;
+    }
+
+    function saveGasUrl() {
+      const val = document.getElementById('inputGasUrl').value.trim();
+      if (!val || !val.startsWith('http')) {
+        alert('正しいGAS WebアプリURLを入力してください');
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, val);
+      document.getElementById('setupModal').style.display = 'none';
+      document.getElementById('splashScreen').classList.remove('fade-out');
+      document.getElementById('appFrame').src = val;
+    }
+
+    function openSetupModal() {
+      const current = localStorage.getItem(STORAGE_KEY) || DEFAULT_GAS_URL;
+      document.getElementById('inputGasUrl').value = current || '';
+      document.getElementById('setupModal').style.display = 'flex';
+    }
+
+    function closeSetupModal() {
+      document.getElementById('setupModal').style.display = 'none';
+    }
+
+    function switchPage(page) {
+      const base = getBaseUrl();
+      const target = buildUrlWithPage(base, page);
+      document.getElementById('setupModal').style.display = 'none';
+      document.getElementById('splashScreen').classList.remove('fade-out');
+      document.getElementById('appFrame').src = target;
+    }
+
+    function reloadFrame() {
+      const frame = document.getElementById('appFrame');
+      if (frame.src && frame.src !== 'about:blank') {
+        document.getElementById('setupModal').style.display = 'none';
+        document.getElementById('splashScreen').classList.remove('fade-out');
+        frame.src = frame.src;
+      }
+    }
+
+    function onFrameLoaded() {
+      const frame = document.getElementById('appFrame');
+      if (frame.src && frame.src !== 'about:blank') {
+        setTimeout(() => {
+          const splash = document.getElementById('splashScreen');
+          if (splash) splash.classList.add('fade-out');
+        }, 500);
+      }
+    }
+
+    setTimeout(() => {
+      const splash = document.getElementById('splashScreen');
+      if (splash) splash.classList.add('fade-out');
+    }, 5000);
+
+    window.addEventListener('DOMContentLoaded', initPwa);
+  </script>
+</body>
+</html>
