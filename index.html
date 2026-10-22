@@ -14,7 +14,7 @@
 
   <!-- iOS Safari / Android Chrome フルスクリーン（アドレスバー非表示）設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="マイスコア">
   <meta name="application-name" content="マイスコア">
   <meta name="mobile-web-app-capable" content="yes">
@@ -279,6 +279,46 @@
       color: #d9480f;
       line-height: 1.4;
       display: none;
+    }
+
+    /* 既存の余計なノッチ用オーバーレイや疑似要素を完全消去 */
+    body::before, body::after, header::before, header::after, .safe-area-spacer {
+      display: none !important;
+      content: none !important;
+    }
+
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      background-color: #ffffff !important; /* 緑帯の露出を物理的に根絶 */
+      overflow-x: hidden !important;
+    }
+
+    /* 上部ヘッダー：Dynamic Island（ステータスバー）の領域だけを緑色背景でカバーし、そのすぐ下にタイトルを配置 */
+    header, .app-header, #mainHeader {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 1000 !important;
+      background: #1b4332 !important; /* グラデーションや半透明を廃止し単色の濃緑に */
+      padding-top: env(safe-area-inset-top, 0px) !important;
+      margin-top: 0 !important;
+      opacity: 1 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    /* 下部フッター：画面最下部に固定し、ホームバー領域まで白背景で埋める */
+    footer, .bottom-nav, .app-footer, #bottomBar {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 1000 !important;
+      background-color: #ffffff !important;
+      padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+      margin-bottom: 0 !important;
     }
   </style>
 </head>
