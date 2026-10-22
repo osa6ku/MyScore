@@ -56,8 +56,8 @@
       inset: 0;
     }
     /* 📱 Safe Area 対応:
-       iframe 内部では env(safe-area-inset-*) が常に 0 になるため、
-       ノッチ / Dynamic Island / ステータスバー分の余白は必ずこの外側ラッパーで確保する。 */
+       iframe 内部では env(safe-area-inset-*) が 0 になるため、
+       ステータスバー（時計）分の余白のみを外側ラッパーで自然に確保（固定44px二重加算を完全撤廃） */
     .app-frame-wrap {
       position: fixed;
       inset: 0;
@@ -75,9 +75,8 @@
       -webkit-overflow-scrolling: touch;
       box-sizing: border-box;
     }
-    /* ホーム画面追加 (standalone) で env() が取れない旧iOS向けフォールバック */
     html.standalone-mode .app-frame-wrap {
-      padding-top: max(44px, env(safe-area-inset-top, 44px));
+      padding-top: env(safe-area-inset-top, 0px);
     }
     iframe {
       position: static;
@@ -94,7 +93,7 @@
     .splash {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+      background: #1b4332;
       display: flex;
       flex-direction: column;
       align-items: center;
