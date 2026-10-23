@@ -1,11 +1,13 @@
-const CACHE_NAME = 'myscore-pwa-v1.0.25';
+const CACHE_NAME = 'myscore-pwa-v1.0.26';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  './apple-touch-icon.png'
+  './icons/apple-touch-icon-180.png',
+  './icons/pwa-icon-192.png',
+  './icons/pwa-icon-512.png',
+  './icons/maskable-icon-512.png',
+  './icons/favicon-48.png'
 ];
 
 self.addEventListener('install', (event) => {

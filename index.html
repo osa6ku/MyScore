@@ -6,10 +6,12 @@
   <title>マイスコア</title>
 
   <!-- ⛳️ PWA & ホーム画面追加 (iPhone 17 iOS Safari / Pixel 10a Android Chrome 完全対応) -->
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="apple-touch-icon" href="icon-512.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link rel="apple-touch-icon" href="icons/pwa-icon-512.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/pwa-icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/pwa-icon-512.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+  <link rel="shortcut icon" href="icons/favicon-48.png">
   <link rel="manifest" href="manifest.json">
 
   <!-- iOS Safari / Android Chrome フルスクリーン（アドレスバー非表示）設定 -->
@@ -108,7 +110,7 @@
     .splash img {
       width: 96px;
       height: 96px;
-      border-radius: 4px;
+      border-radius: 22%;
       box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     }
     .splash-title {
@@ -331,7 +333,7 @@
 <body>
   <!-- スプラッシュ画面 -->
   <div class="splash" id="splashScreen">
-    <img src="icon-192.png" alt="マイスコア">
+    <img src="icons/pwa-icon-192.png" alt="マイスコア">
     <div class="splash-title">マイスコア v1.0</div>
     <div class="spinner"></div>
   </div>
@@ -340,7 +342,7 @@
   <div class="setup-modal" id="setupModal">
     <div class="setup-card">
       <div class="setup-header">
-        <div class="setup-title"><img src="icon-192.png" alt="icon"> マイスコア 設定</div>
+        <div class="setup-title"><img src="icons/pwa-icon-192.png" alt="icon"> マイスコア 設定</div>
         <button type="button" class="setup-close" onclick="closeSetupModal()">✕</button>
       </div>
 
