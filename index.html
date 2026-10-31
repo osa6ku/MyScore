@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.38</title>
+  <title>マイスコア v1.0.39</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.38</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.39</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -3844,6 +3844,14 @@
       return typeof google !== 'undefined' && typeof google.script !== 'undefined' && typeof google.script.run !== 'undefined';
     }
 
+    // 🌐 GAS本番 Web API エンドポイント URL (GitHub Pages / PWA / 外部アクセス用フォールバック)
+    const DEFAULT_GAS_API_URL = "https://script.google.com/macros/s/AKfycbxRNBWIhRi_lUI9jnzHMb48-w5ElyAz_vf2Bt-pF2D1q8d8_Kjdm1me77fYK3_PX1uo/exec";
+
+    // 🌐 常時本番エンドポイントを返し、PWA/GitHub Pages環境でもローカルデモに堕ちない安全アクセサ
+    function getEffectiveApiUrl() {
+      return safeStorage.getItem('MyScore_v1_ApiUrl') || DEFAULT_GAS_API_URL;
+    }
+
     function initEnvStatus() {
       const badge = document.getElementById('envStatus');
       if (!badge) return;
@@ -3851,19 +3859,11 @@
         badge.textContent = 'GAS連携';
         badge.style.background = '#2b8a3e';
       } else {
-        const apiUrl = safeStorage.getItem('MyScore_v1_ApiUrl');
-        if (apiUrl) {
-          badge.textContent = 'WebAPI連携';
-          badge.style.background = '#1971c2';
-        } else {
-          badge.textContent = 'ローカルデモ';
-          badge.style.background = '#495057';
-        }
+        // PWA・GitHub環境でもデフォルト本番APIへ直通
+        badge.textContent = 'WebAPI連携';
+        badge.style.background = '#1971c2';
       }
     }
-
-    // 🌐 GAS本番 Web API エンドポイント URL (GitHub Pages / PWA / 外部アクセス用フォールバック)
-    const DEFAULT_GAS_API_URL = "https://script.google.com/macros/s/AKfycbxRNBWIhRi_lUI9jnzHMb48-w5ElyAz_vf2Bt-pF2D1q8d8_Kjdm1me77fYK3_PX1uo/exec";
 
     function setupDefaultRound() {
       state.courseName = '';
@@ -4592,7 +4592,7 @@
           if (typeof onDoneCallback === 'function') onDoneCallback();
         }).getCourseStrategies(courseName);
       } else {
-        const apiUrl = safeStorage.getItem('MyScore_v1_ApiUrl');
+        const apiUrl = getEffectiveApiUrl();
         if (apiUrl) {
           const url = apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=getCourseStrategies&courseName=' + encodeURIComponent(courseName);
           fetch(url).then(r => r.json()).then(applyStrat).catch(() => {
@@ -5617,7 +5617,7 @@ function renderHoleView() {
           .withFailureHandler(() => {})
           .saveDraftToScorecard(buildPayload());
       } else {
-        const apiUrl = safeStorage.getItem('MyScore_v1_ApiUrl');
+        const apiUrl = getEffectiveApiUrl();
         if (apiUrl) {
           fetch(apiUrl, {
             method: 'POST',
@@ -7334,6 +7334,7 @@ function renderHoleView() {
                 window.isFinalizingRound = false;
               };
 
+              const apiUrl = getEffectiveApiUrl();
               if (isGasEnv()) {
                 if (!navigator.onLine) {
                   savePendingRound(buildPayload());
@@ -7425,19 +7426,104 @@ function renderHoleView() {
                     alert('【📴 通信一時保存】\n電波が途切れたため、ラウンドデータを端末内に安全に一時保存しました。\n電波状況が回復した後に、画面上部の「今すぐ送信」から同期できます。\n（エラー: ' + err.message + '）');
                   })
                   .finalizeRound(buildPayload());
+              } else if (apiUrl) {
+                // 🌐 PWA / GitHub Pages環境からのWeb API経由での本番保存
+                if (!navigator.onLine) {
+                  savePendingRound(buildPayload());
+                  btn.textContent = 'ラウンド終了';
+                  btn.disabled = false;
+                  unlock();
+                  alert('【📴 オフライン一時保存完了】\n電波が圏外のため、端末内に安全に一時保存しました。電波回復後に「今すぐ送信」からGoogleスプレッドシートへ送信できます。');
+                  return;
+                }
+
+                fetch(apiUrl, {
+                  method: 'POST',
+                  body: JSON.stringify({ action: 'finalizeRound', payload: buildPayload() })
+                })
+                .then(r => r.json())
+                .then(async res => {
+                  if (!res.success) {
+                    btn.textContent = 'ラウンド終了';
+                    btn.disabled = false;
+                    unlock();
+                    alert('保存エラー: ' + (res.error || '不明なエラー'));
+                    return;
+                  }
+
+                  safeStorage.removeItem('MyScore_v1_PendingRound');
+                  updateOfflineSyncBanner();
+
+                  if (res.needsMerge) {
+                    btn.textContent = 'スコアブック結合中...';
+                    try {
+                      if (typeof PDFLib === 'undefined') {
+                        openCompleteModal(res.pdfUrl);
+                        btn.textContent = 'ラウンド終了';
+                        btn.disabled = false;
+                        unlock();
+                        return;
+                      }
+
+                      const existingBytes = base64ToArrayBuffer(res.existingPdfBase64);
+                      const newBytes = base64ToArrayBuffer(res.newPdfBase64);
+                      const existingPdfDoc = await PDFLib.PDFDocument.load(existingBytes);
+                      const newPdfDoc = await PDFLib.PDFDocument.load(newBytes);
+                      const [copiedPage] = await existingPdfDoc.copyPages(newPdfDoc, [0]);
+                      existingPdfDoc.insertPage(0, copiedPage);
+                      const mergedBytes = await existingPdfDoc.save();
+                      const mergedBase64 = arrayBufferToBase64(mergedBytes);
+
+                      fetch(apiUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                          action: 'saveScorebookPDF',
+                          payload: {
+                            mergedPdfBase64: mergedBase64,
+                            existingFileId: res.existingFileId,
+                            fileName: res.fileName
+                          }
+                        })
+                      })
+                      .then(r2 => r2.json())
+                      .then(saveRes => {
+                        btn.textContent = 'ラウンド終了';
+                        btn.disabled = false;
+                        unlock();
+                        openCompleteModal(saveRes.pdfUrl || res.pdfUrl);
+                      })
+                      .catch(() => {
+                        btn.textContent = 'ラウンド終了';
+                        btn.disabled = false;
+                        unlock();
+                        openCompleteModal(res.pdfUrl);
+                      });
+                    } catch (e) {
+                      btn.textContent = 'ラウンド終了';
+                      btn.disabled = false;
+                      unlock();
+                      openCompleteModal(res.pdfUrl);
+                    }
+                  } else {
+                    btn.textContent = 'ラウンド終了';
+                    btn.disabled = false;
+                    unlock();
+                    openCompleteModal(res.pdfUrl);
+                  }
+                })
+                .catch(err => {
+                  btn.textContent = 'ラウンド終了';
+                  btn.disabled = false;
+                  unlock();
+                  savePendingRound(buildPayload());
+                  alert('【📴 通信一時保存】\n電波が途切れたため、ラウンドデータを端末内に安全に一時保存しました。\n（エラー: ' + err.message + '）');
+                });
               } else {
-                // ローカル/外部実行環境
+                // ローカル実行環境フォールバック
                 setTimeout(() => {
                   btn.textContent = 'ラウンド終了';
                   btn.disabled = false;
                   unlock();
-                  const p1Name = (state.players && state.players[0] && state.players[0].name) ? state.players[0].name.trim() : '桑木修';
-                  const linkEl = document.getElementById('linkScorebookPdf');
-                  linkEl.href = '#';
-                  linkEl.onclick = (e) => {
-                    e.preventDefault();
-                    alert('【ローカル実行】実環境（GAS）にデプロイすると、Googleドライブ内の単一ファイル『' + p1Name + '_スコアブック.pdf』の先頭ページに今回のスコアカードが自動追記されます。');
-                  };
                   openCompleteModal();
                   showToast('ラウンドデータを完了・ローカル保存しました');
                 }, 600);
@@ -8321,7 +8407,7 @@ function renderHoleView() {
           safeStorage.removeItem('MyScore_v1_ApiUrl');
           document.getElementById('inputApiUrl').value = '';
           initEnvStatus();
-          showToast('Web API URLを解除しました（ローカルデモに復帰）');
+          showToast('Web API URLをリセットしました（本番デフォルトURLに復帰）');
         });
       }
 
@@ -8566,6 +8652,7 @@ function renderHoleView() {
         syncBtn.disabled = true;
       }
 
+      const apiUrl = getEffectiveApiUrl();
       if (isGasEnv()) {
         google.script.run
           .withSuccessHandler(async res => {
@@ -8631,6 +8718,79 @@ function renderHoleView() {
             alert('同期送信に失敗しました: ' + err.message);
           })
           .finalizeRound(payload);
+      } else if (apiUrl) {
+        // 🌐 Web API経由の保留中ラウンド同期
+        fetch(apiUrl, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'finalizeRound', payload: payload })
+        })
+        .then(r => r.json())
+        .then(async res => {
+          if (syncBtn) {
+            syncBtn.textContent = '今すぐ送信';
+            syncBtn.disabled = false;
+          }
+          if (!res.success) {
+            unlock();
+            alert('同期エラー: ' + (res.error || '不明なエラー'));
+            return;
+          }
+
+          safeStorage.removeItem('MyScore_v1_PendingRound');
+          updateOfflineSyncBanner();
+
+          if (res.needsMerge && typeof PDFLib !== 'undefined') {
+            try {
+              const existingBytes = base64ToArrayBuffer(res.existingPdfBase64);
+              const newBytes = base64ToArrayBuffer(res.newPdfBase64);
+              const existingPdfDoc = await PDFLib.PDFDocument.load(existingBytes);
+              const newPdfDoc = await PDFLib.PDFDocument.load(newBytes);
+              const [copiedPage] = await existingPdfDoc.copyPages(newPdfDoc, [0]);
+              existingPdfDoc.insertPage(0, copiedPage);
+              const mergedBytes = await existingPdfDoc.save();
+              const mergedBase64 = arrayBufferToBase64(mergedBytes);
+
+              fetch(apiUrl, {
+                method: 'POST',
+                body: JSON.stringify({
+                  action: 'saveScorebookPDF',
+                  payload: {
+                    mergedPdfBase64: mergedBase64,
+                    existingFileId: res.existingFileId,
+                    fileName: res.fileName
+                  }
+                })
+              })
+              .then(r2 => r2.json())
+              .then(saveRes => {
+                unlock();
+                openCompleteModal(saveRes.pdfUrl || res.pdfUrl);
+                showToast('✅ 保留中ラウンドの保存＆スコアブック更新が完了しました！');
+              })
+              .catch(() => {
+                unlock();
+                openCompleteModal(res.pdfUrl);
+                showToast('✅ 保留中ラウンドの保存が完了しました！');
+              });
+            } catch (e) {
+              unlock();
+              openCompleteModal(res.pdfUrl);
+              showToast('✅ 保留中ラウンドの保存が完了しました！');
+            }
+          } else {
+            unlock();
+            openCompleteModal(res.pdfUrl);
+            showToast('✅ 保留中ラウンドの保存が完了しました！');
+          }
+        })
+        .catch(err => {
+          unlock();
+          if (syncBtn) {
+            syncBtn.textContent = '今すぐ送信';
+            syncBtn.disabled = false;
+          }
+          alert('同期送信に失敗しました: ' + err.message);
+        });
       } else {
         setTimeout(() => {
           unlock();
@@ -9261,7 +9421,7 @@ function renderHoleView() {
             .withFailureHandler(() => {})
             .recordAccessLog(payload);
         } else {
-          const apiUrl = safeStorage.getItem('MyScore_v1_ApiUrl');
+          const apiUrl = getEffectiveApiUrl();
           if (apiUrl) {
             fetch(apiUrl, {
               method: 'POST',
@@ -9330,7 +9490,7 @@ function renderHoleView() {
           })
           .getRecentAccessLogs(20);
       } else {
-        const apiUrl = safeStorage.getItem('MyScore_v1_ApiUrl');
+        const apiUrl = getEffectiveApiUrl();
         if (apiUrl) {
           fetch(apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=getAccessLogs&limit=20')
             .then(r => r.json())
@@ -9701,7 +9861,7 @@ function renderHoleView() {
         course = cEl ? cEl.value : 'all';
       }
 
-      const apiUrl = safeStorage.getItem('MyScore_v1_ApiUrl');
+      const apiUrl = getEffectiveApiUrl();
 
       if (isGasEnv()) {
         google.script.run
@@ -9720,7 +9880,12 @@ function renderHoleView() {
             if (refreshBtn) refreshBtn.textContent = '🔄 更新';
             const errMsg = err ? (err.message || err.toString()) : '不明なエラー';
             console.error('GAS Error in getAnalyticsData:', err);
-            alert('サーバー通信エラーが発生しました: ' + errMsg);
+            if (analyticsDataCache) {
+              showToast('オフライン: キャッシュ済み分析データを表示中');
+              renderAnalyticsUI(analyticsDataCache);
+            } else {
+              alert('サーバー通信エラーが発生しました: ' + errMsg);
+            }
           })
           .getAnalyticsData(pName, period, course);
       } else if (apiUrl) {
@@ -9744,12 +9909,33 @@ function renderHoleView() {
           })
           .catch(err => {
             if (refreshBtn) refreshBtn.textContent = '🔄 更新';
-            showToast('Web API取得失敗: デモデータを表示します');
-            renderDemoAnalytics();
+            console.warn('Web API getAnalyticsData failed:', err);
+            // 🛡️ 通信エラー時に勝手にデモデータで上書きせず、キャッシュされている本番データを最優先
+            const cached = safeStorage.getItem('MyScore_v1_Analytics');
+            if (cached) {
+              try {
+                analyticsDataCache = JSON.parse(cached);
+                renderAnalyticsUI(analyticsDataCache);
+                showToast('オフライン: キャッシュ済み分析データを表示中');
+                return;
+              } catch (e) {}
+            }
+            if (analyticsDataCache) {
+              renderAnalyticsUI(analyticsDataCache);
+              showToast('オフライン: キャッシュ済み分析データを表示中');
+            } else {
+              showToast('⚠️ 通信エラー: 本番データ未取得です。電波の良い場所で更新してください');
+            }
           });
       } else {
         if (refreshBtn) refreshBtn.textContent = '🔄 更新';
-        renderDemoAnalytics();
+        const cached = safeStorage.getItem('MyScore_v1_Analytics');
+        if (cached) {
+          try {
+            analyticsDataCache = JSON.parse(cached);
+            renderAnalyticsUI(analyticsDataCache);
+          } catch (e) {}
+        }
       }
     }
 
@@ -14063,8 +14249,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.38 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.38 起動完了');
+            console.log('[ScoreRec] v1.0.39 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.39 起動完了');
           }
         }, 400);
       });
@@ -14072,8 +14258,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.38 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.38 起動完了');
+          console.log('[ScoreRec] v1.0.39 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.39 起動完了');
         }
       }, 400);
     }
