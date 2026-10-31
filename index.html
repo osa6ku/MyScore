@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.39</title>
+  <title>マイスコア v1.0.40</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.39</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.40</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -3496,7 +3496,7 @@
     window.normalizeClubSequenceItem = normalizeClubSequenceItem;
 
     // 🛰️ ショットトレーサー グローバル定数・状態 (TDZ防止のため先頭で定義)
-    var SHOT_CLUBS = window.SHOT_CLUBS = ['1W', '5W', '5H', '6I', '7I', '8I', '9I', 'W', '50', '54', '58', 'ChipR', 'PT'];
+    var SHOT_CLUBS = window.SHOT_CLUBS = ['1W', '3W', '5W', '7W', '3U', '4U', '5U', '6U', 'H3', 'H4', 'H5', '5H', '6I', '7I', '8I', '9I', 'PW', 'W', '50', '52', '54', '56', '58', 'ChipR', 'PT'];
     var shotLinesLayer = null;
     var currentShotTracerHole = 0; // 0 to 17
     var currentSelectedClub = '1W';
@@ -8987,7 +8987,7 @@ function renderHoleView() {
       if (elBogeyOnSub) elBogeyOnSub.textContent = `成功 ${bogeyOnCount} / ${totalAnalyzedHoles} ホール`;
 
       // 3. メインエリア: 番手別・自動成長型ハイブリッド分析
-      const DEFAULT_ORDER = ['1W', '5W', '5H', '6I', '7I', '8I', '9I', 'W', '50', '54', '58', 'ChipR', 'PT'];
+      const DEFAULT_ORDER = ['1W', '3W', '5W', '7W', '3U', '4U', '5U', '6U', 'H3', 'H4', 'H5', '5H', '6I', '7I', '8I', '9I', 'PW', 'W', '50', '52', '54', '56', '58', 'ChipR', 'PT'];
       const clubStatsMap = {};
       let grandTotalShots = 0;
 
@@ -9013,7 +9013,7 @@ function renderHoleView() {
                 evaluatedCount: 0,
                 niceCount: 0,
                 goodCount: 0,
-                missCounts: { '左': 0, '右': 0, '短': 0, '奥': 0, 'ダ': 0, 'ト': 0 },
+                missCounts: {},
                 history: []
               };
             }
@@ -9023,11 +9023,14 @@ function renderHoleView() {
             cs.history.push({ res: item.res || '' });
 
             if (item.res) {
-              cs.evaluatedCount++;
-              if (item.res === '◎') cs.niceCount++;
-              else if (item.res === '◯') cs.goodCount++;
-              else if (cs.missCounts[item.res] !== undefined) {
-                cs.missCounts[item.res]++;
+              const c = classifyShotResult(item.res);
+              if (c && c.evaluated) {
+                cs.evaluatedCount++;
+                if (c.isSuccess) {
+                  cs.niceCount++;
+                } else if (c.missType) {
+                  cs.missCounts[c.missType] = (cs.missCounts[c.missType] || 0) + 1;
+                }
               }
             }
           });
@@ -9075,7 +9078,7 @@ function renderHoleView() {
         let successRateBadgeHtml = '';
 
         if (isUnlocked) {
-          const successCount = cs.niceCount + cs.goodCount;
+          const successCount = cs.niceCount;
           const successRate = Math.round((successCount / n) * 100);
 
           let maxMissType = '';
@@ -9095,17 +9098,23 @@ function renderHoleView() {
                 ⚠️ 最多ミス: ${escapeHtml(maxMissType)} (${missRate}%)
               </span>
             `;
-          } else {
+          } else if (successRate === 100) {
             missHighlightHtml = `
               <span class="an-nowrap" style="color:#2b8a3e; font-weight:bold; background:#d3f9d8; padding:1px 6px; border-radius:4px; border:1px solid #b2f2bb; font-size:0.68rem;">
                 🎉 ミスなし (成功率100%)
               </span>
             `;
+          } else {
+            const missRate = 100 - successRate;
+            missHighlightHtml = `
+              <span class="an-nowrap" style="color:#d9480f; font-weight:bold; background:#fff4e6; padding:1px 6px; border-radius:4px; border:1px solid #ffd8a8; font-size:0.68rem;">
+                ⚠️ ミス率 (${missRate}%)
+              </span>
+            `;
           }
 
           let breakdownTexts = [];
-          if (cs.niceCount > 0) breakdownTexts.push(`◎:${cs.niceCount}`);
-          if (cs.goodCount > 0) breakdownTexts.push(`◯:${cs.goodCount}`);
+          if (cs.niceCount > 0) breakdownTexts.push(`ナイス:${cs.niceCount}`);
           Object.keys(cs.missCounts).forEach(k => {
             if (cs.missCounts[k] > 0) breakdownTexts.push(`${k}:${cs.missCounts[k]}`);
           });
@@ -9169,17 +9178,66 @@ function renderHoleView() {
       container.innerHTML = listHtml;
     }
 
+    function classifyShotResult(resStr) {
+      if (!resStr) return null;
+      const res = String(resStr).trim();
+      if (!res) return null;
+
+      const isNiceOut = res.includes('ナイスアウト');
+      const isMissWord = !isNiceOut && (
+        res.includes('OB') || res.includes('ペナ') || res.includes('バンカー') ||
+        res.includes('トップ') || res.includes('ショート') || res.includes('短') ||
+        res.includes('出ず') || res === 'ダ' || res.includes('ダフリ') ||
+        res === 'ト' || res === '左' || res === '右' || res === '奥'
+      );
+      const isSuccessWord = isNiceOut || (
+        res.includes('ナイス') || res.includes('パー') || res.includes('OK') ||
+        res.includes('ピン当たり') || res.includes('乗せ') ||
+        res === '◎' || res === '◯' || res === '○'
+      );
+
+      const isSuccess = !isMissWord && isSuccessWord;
+
+      let missType = null;
+      if (!isSuccess) {
+        if (res.includes('OB')) missType = 'OB';
+        else if (res.includes('ペナ')) missType = 'ペナ';
+        else if (res.includes('バンカー') || res.includes('出ず')) missType = 'バンカー';
+        else if (res.includes('トップ') || res === 'ト') missType = 'トップ';
+        else if (res.includes('ショート') || res.includes('短')) missType = 'ショート';
+        else if (res === 'ダ' || res.includes('ダフリ')) missType = 'ダフリ';
+        else if (res === '左') missType = '左';
+        else if (res === '右') missType = '右';
+        else if (res === '奥') missType = '奥';
+        else missType = res;
+      }
+
+      return {
+        evaluated: true,
+        isSuccess: isSuccess,
+        missType: missType,
+        original: res
+      };
+    }
+    window.classifyShotResult = classifyShotResult;
+
     function getStampClass(res) {
       if (!res) return 'stamp-none';
-      if (res === '◎') return 'stamp-nice';
-      if (res === '◯') return 'stamp-good';
-      if (res === '左') return 'stamp-left';
-      if (res === '右') return 'stamp-right';
-      if (res === '短') return 'stamp-short';
-      if (res === '奥') return 'stamp-over';
-      if (res === 'ダ') return 'stamp-duff';
-      if (res === 'ト') return 'stamp-top';
-      return 'stamp-none';
+      const c = classifyShotResult(res);
+      if (!c) return 'stamp-none';
+      if (c.isSuccess) {
+        if (c.original === '◯' || c.original === '○') return 'stamp-good';
+        return 'stamp-nice';
+      }
+      if (c.missType === '左') return 'stamp-left';
+      if (c.missType === '右') return 'stamp-right';
+      if (c.missType === 'ショート' || c.missType === '短') return 'stamp-short';
+      if (c.missType === '奥') return 'stamp-over';
+      if (c.missType === 'ダフリ' || c.missType === 'ダ') return 'stamp-duff';
+      if (c.missType === 'トップ' || c.missType === 'ト') return 'stamp-top';
+      if (c.missType === 'バンカー') return 'stamp-short';
+      if (c.missType === 'OB' || c.missType === 'ペナ') return 'stamp-duff';
+      return 'stamp-left';
     }
     
   
@@ -10668,8 +10726,11 @@ function renderHoleView() {
                 if (!clubHoleStats[cName]) {
                   clubHoleStats[cName] = { holeCount: 0, parOrBetter: 0, bogey: 0, doublePlus: 0, totalDiff: 0, missCounts: {} };
                 }
-                if (item.res && item.res !== '◎' && item.res !== '◯') {
-                  clubHoleStats[cName].missCounts[item.res] = (clubHoleStats[cName].missCounts[item.res] || 0) + 1;
+                if (item.res) {
+                  const c = classifyShotResult(item.res);
+                  if (c && !c.isSuccess && c.missType) {
+                    clubHoleStats[cName].missCounts[c.missType] = (clubHoleStats[cName].missCounts[c.missType] || 0) + 1;
+                  }
                 }
               }
 
@@ -10788,7 +10849,7 @@ function renderHoleView() {
 
       // 2. 番手別スコア期待値＆ミス回避率 テーブル生成
       if (stackContainer) {
-        const DEFAULT_ORDER = ['1W', '3W', '5W', 'H5', '5U', '6U', '6I', '7I', '8I', '9I', 'W', 'PW', '50', '54', '58', 'ChipR'];
+        const DEFAULT_ORDER = ['1W', '3W', '5W', '7W', '3U', '4U', '5U', '6U', 'H3', 'H4', 'H5', '5H', '6I', '7I', '8I', '9I', 'PW', 'W', '50', '52', '54', '56', '58', 'ChipR', 'PT'];
         const clubKeys = Object.keys(clubHoleStats).sort((a, b) => {
           const idxA = DEFAULT_ORDER.indexOf(a);
           const idxB = DEFAULT_ORDER.indexOf(b);
@@ -14249,8 +14310,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.39 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.39 起動完了');
+            console.log('[ScoreRec] v1.0.40 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.40 起動完了');
           }
         }, 400);
       });
@@ -14258,8 +14319,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.39 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.39 起動完了');
+          console.log('[ScoreRec] v1.0.40 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.40 起動完了');
         }
       }, 400);
     }
