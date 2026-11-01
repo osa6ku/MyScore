@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.41</title>
+  <title>マイスコア v1.0.42</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.41</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.42</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -2014,12 +2014,12 @@
       </div>
     </div>
 
-    <div class="setting-group" style="margin-top:2px;">
-      <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:bold; color:#1b4332; user-select:none;">
-        <input type="checkbox" id="checkUseGps" style="width:16px; height:16px; accent-color:#2b8a3e; cursor:pointer;">
-        <span>🛰️ GPS現在地・ショット自動測位機能を利用する</span>
+    <div class="setting-group" style="margin-top:4px;">
+      <label for="checkUseGps" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; color:#1b4332; user-select:none; -webkit-user-select:none; padding:4px 0; touch-action:manipulation;">
+        <input type="checkbox" id="checkUseGps" style="width:20px; height:20px; accent-color:#2b8a3e; cursor:pointer; flex-shrink:0; margin:0;">
+        <span style="font-size:12px; line-height:1.2;">🛰️ GPS現在地・ショット自動測位機能を利用する</span>
       </label>
-      <div style="font-size:10px; color:#6c757d; margin-left:22px; line-height:1.2;">※OFF時はGPSリクエストを行わずバッテリーと通信を保護します（デフォルト: OFF）</div>
+      <div style="font-size:10px; color:#6c757d; margin-left:28px; line-height:1.2;">※OFF時はGPSリクエストを行わずバッテリーと通信を保護します（デフォルト: OFF）</div>
     </div>
     <!-- ラウンド設定画面 下部アクション群（3行構成: 1.打順決め / 2.外部Web API連携 / 3.ラウンド初期化） -->
     <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px; width:100%;">
@@ -3497,7 +3497,7 @@
     window.normalizeClubSequenceItem = normalizeClubSequenceItem;
 
     // 🛰️ ショットトレーサー グローバル定数・状態 (TDZ防止のため先頭で定義)
-    var SHOT_CLUBS = window.SHOT_CLUBS = ['1W', '3W', '5W', '7W', '3U', '4U', '5U', '6U', 'H3', 'H4', 'H5', '5H', '6I', '7I', '8I', '9I', 'PW', 'W', '50', '52', '54', '56', '58', 'ChipR', 'PT'];
+    var SHOT_CLUBS = window.SHOT_CLUBS = ['1W', '5W', 'H5', '6I', '7I', '8I', '9I', 'W', '50°', '54°', '58°', 'ChipR', 'PT'];
     var shotLinesLayer = null;
     var currentShotTracerHole = 0; // 0 to 17
     var currentSelectedClub = '1W';
@@ -4144,7 +4144,9 @@
               masterData = res;
               persistMasterDataToStorage(res);
 
-              if (!silentBackground) {
+              const hasLocalRound1 = (state.courseName && state.courseName.trim() !== '') ||
+                                     (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
+              if (!silentBackground && !hasLocalRound1) {
                 state.courseName = '';
                 state.frontHalf = '';
                 state.backHalf = '';
@@ -4188,7 +4190,9 @@
               masterData = res;
               persistMasterDataToStorage(res);
 
-              if (!silentBackground) {
+              const hasLocalRound2 = (state.courseName && state.courseName.trim() !== '') ||
+                                     (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
+              if (!silentBackground && !hasLocalRound2) {
                 state.courseName = '';
                 state.frontHalf = '';
                 state.backHalf = '';
@@ -4200,7 +4204,7 @@
                 renderMasterOptions(false);
               }
               renderHoleView();
-              saveLocalStorage();
+              if (hasLocalRound2) saveLocalStorage();
 
               updateSyncBtns('WebAPI同期済', true);
               const uniqueCourseCount = res.totalCourses || (res.courseCatalog ? res.courseCatalog.length : 0);
@@ -4222,16 +4226,21 @@
           masterData = ensureMasterCoursesExpanded(JSON.parse(JSON.stringify(defaultMasterData)));
           persistMasterDataToStorage(masterData);
 
-          state.courseName = '';
-          state.frontHalf = '';
-          state.backHalf = '';
-          state.tee = '';
-          state.green = '';
-          state.players.forEach((p, idx) => { p.name = (idx === 0) ? '桑木修' : ''; });
-
-          renderMasterOptions(true);
+          const hasLocalRoundLocal = (state.courseName && state.courseName.trim() !== '') ||
+                                     (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
+          if (!hasLocalRoundLocal) {
+            state.courseName = '';
+            state.frontHalf = '';
+            state.backHalf = '';
+            state.tee = '';
+            state.green = '';
+            state.players.forEach((p, idx) => { p.name = (idx === 0) ? '桑木修' : ''; });
+            renderMasterOptions(true);
+          } else {
+            renderMasterOptions(false);
+          }
           renderHoleView();
-          saveLocalStorage();
+          if (hasLocalRoundLocal) saveLocalStorage();
 
           updateSyncBtns('同期済 (ローカル)', true);
           const cCount = masterData.courseCatalog ? masterData.courseCatalog.length : 0;
@@ -4387,8 +4396,12 @@
 
       const placeholderHtml = '<option value="">※先にゴルフ場を選択してください</option><option value="+新規">＋新規入力</option>';
 
-      // もしリセット時、あるいはゴルフ場が未設定・無効の場合
-      if (resetSelections || !state.courseName || !uniqueCourses.includes(state.courseName)) {
+      // 🛡️ 進行中ラウンド判定: 入力済みスコアまたはゴルフ場が設定されている場合は絶対に白紙初期化しない
+      const hasOngoingRound = (state.courseName && state.courseName.trim() !== '') ||
+                              (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
+
+      // もしリセット時、あるいはゴルフ場が未設定・無効の場合（※進行中ラウンドがある場合はリセットを完全バイパス）
+      if (!hasOngoingRound && (resetSelections || !state.courseName || !uniqueCourses.includes(state.courseName))) {
         courseSel.value = '';
         state.courseName = '';
         state.frontHalf = '';
@@ -8446,11 +8459,18 @@ function renderHoleView() {
       const gpsCheck = document.getElementById('checkUseGps');
       if (gpsCheck) {
         gpsCheck.checked = Boolean(state.useGps);
-        gpsCheck.addEventListener('change', (e) => {
-          state.useGps = Boolean(e.target.checked);
+        const handleGpsToggle = (val) => {
+          state.useGps = Boolean(val);
+          gpsCheck.checked = state.useGps;
           if (typeof saveLocalStorage === 'function') saveLocalStorage();
           updateGpsButtonsVisibility();
           showToast(state.useGps ? '🛰️ GPS機能をONにしました' : '🛰️ GPS機能をOFFにしました');
+        };
+        gpsCheck.addEventListener('change', (e) => {
+          handleGpsToggle(e.target.checked);
+        });
+        gpsCheck.addEventListener('click', (e) => {
+          e.stopPropagation();
         });
       }
 
@@ -9147,7 +9167,7 @@ function renderHoleView() {
       if (elBogeyOnSub) elBogeyOnSub.textContent = `成功 ${bogeyOnCount} / ${totalAnalyzedHoles} ホール`;
 
       // 3. メインエリア: 番手別・自動成長型ハイブリッド分析
-      const DEFAULT_ORDER = ['1W', '3W', '5W', '7W', '3U', '4U', '5U', '6U', 'H3', 'H4', 'H5', '5H', '6I', '7I', '8I', '9I', 'PW', 'W', '50', '52', '54', '56', '58', 'ChipR', 'PT'];
+      const DEFAULT_ORDER = ['1W', '5W', 'H5', '6I', '7I', '8I', '9I', 'W', '50°', '54°', '58°', 'ChipR', 'PT'];
       const clubStatsMap = {};
       let grandTotalShots = 0;
 
@@ -11009,7 +11029,7 @@ function renderHoleView() {
 
       // 2. 番手別スコア期待値＆ミス回避率 テーブル生成
       if (stackContainer) {
-        const DEFAULT_ORDER = ['1W', '3W', '5W', '7W', '3U', '4U', '5U', '6U', 'H3', 'H4', 'H5', '5H', '6I', '7I', '8I', '9I', 'PW', 'W', '50', '52', '54', '56', '58', 'ChipR', 'PT'];
+        const DEFAULT_ORDER = ['1W', '5W', 'H5', '6I', '7I', '8I', '9I', 'W', '50°', '54°', '58°', 'ChipR', 'PT'];
         const clubKeys = Object.keys(clubHoleStats).sort((a, b) => {
           const idxA = DEFAULT_ORDER.indexOf(a);
           const idxB = DEFAULT_ORDER.indexOf(b);
@@ -13629,6 +13649,7 @@ function renderHoleView() {
       // 追加した打を自動選択（評価サブバーをその打に向ける）
       activeSeqShotIndex = seq.length - 1;
       renderClubSequenceUI();
+      if (typeof saveLocalStorage === 'function') saveLocalStorage();
 
       // --- スマートGPS自動連動（完全非同期・排他制御・フェイルセーフ） ---
       try {
@@ -13817,6 +13838,7 @@ function renderHoleView() {
           seq[activeSeqShotIndex].res = resVal;
         }
         renderClubSequenceUI();
+        if (typeof saveLocalStorage === 'function') saveLocalStorage();
       }
     }
 
@@ -13869,6 +13891,7 @@ function renderHoleView() {
         seq.pop();
         activeSeqShotIndex = seq.length > 0 ? (seq.length - 1) : -1;
         renderClubSequenceUI();
+        if (typeof saveLocalStorage === 'function') saveLocalStorage();
       }
     }
 
@@ -13895,6 +13918,7 @@ function renderHoleView() {
         seq.splice(index, 1);
         activeSeqShotIndex = seq.length > 0 ? (seq.length - 1) : -1;
         renderClubSequenceUI();
+        if (typeof saveLocalStorage === 'function') saveLocalStorage();
       }
     }
 
@@ -13904,6 +13928,7 @@ function renderHoleView() {
       state.clubSequences[hIdx] = [];
       activeSeqShotIndex = -1;
       renderClubSequenceUI();
+      if (typeof saveLocalStorage === 'function') saveLocalStorage();
     }
 
     function renderClubSequenceUI() {
@@ -14404,6 +14429,10 @@ function renderHoleView() {
           }, 300);
         }
 
+        // 🛡️ 進行中ラウンドの復元チェック（1アクション毎の入力やキル耐性）
+        const hasSavedRound = (state.courseName && state.courseName.trim() !== '') ||
+                              (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
+
         // 🛡️ 本人（1人目: 桑木修）のみ初期設定、同伴者2〜4人目はデフォルト空欄
         if (!state.players || !state.players[0] || !state.players[0].name || state.players[0].name.trim() === '') {
           if (!state.players) state.players = [];
@@ -14417,11 +14446,7 @@ function renderHoleView() {
           }
         }
 
-        if (state.courseName && state.players.some(p => p.name)) {
-          renderMasterOptions(false);
-        } else {
-          renderMasterOptions(false);
-        }
+        renderMasterOptions(false);
 
         if (state.courseName && typeof fetchCourseStrategiesIfNeeded === 'function') {
           fetchCourseStrategiesIfNeeded(state.courseName);
@@ -14456,7 +14481,9 @@ function renderHoleView() {
       // 🌐 GitHub Pages / PWA / 初回起動時のマスターデータ自動取得
       try {
         const totalCourses = (masterData && (masterData.totalCourses || (masterData.courseCatalog && masterData.courseCatalog.length))) || 0;
-        if (totalCourses <= 3 && navigator.onLine) {
+        const hasOngoing = (state.courseName && state.courseName.trim() !== '') ||
+                           (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
+        if (totalCourses <= 3 && !hasOngoing && navigator.onLine) {
           console.log('[ScoreRec] 初回マスターデータ自動同期を実行 (totalCourses=' + totalCourses + ')');
           setTimeout(() => { executeMasterSync(true); }, 500);
         }
@@ -14471,8 +14498,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.41 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.41 起動完了');
+            console.log('[ScoreRec] v1.0.42 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.42 起動完了');
           }
         }, 400);
       });
@@ -14480,8 +14507,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.41 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.41 起動完了');
+          console.log('[ScoreRec] v1.0.42 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.42 起動完了');
         }
       }, 400);
     }
