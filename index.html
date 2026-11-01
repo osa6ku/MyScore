@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.40</title>
+  <title>マイスコア v1.0.41</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.40</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.41</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -3380,6 +3380,7 @@
 
     var state = window.state = {
       currentHole: 1,
+      roundId: null,
       date: getTodayJstString(),
       courseName: '',
       frontHalf: '',
@@ -5607,23 +5608,62 @@ function renderHoleView() {
       return hasAny ? sum : '-';
     }
 
+    // ★【データ保全強化】ホール終了ごとの完全非同期バックグラウンド保存 ＆ 排他キュー制御
+    var isSyncingToSheet = false;
+    var hasPendingSheetSync = false;
+
     function triggerDraftSave() {
       saveLocalStorage();
       if (!navigator.onLine) return;
-      if (!state.courseName || !state.players[0].name) return;
+      if (!state.courseName || !state.players[0] || !state.players[0].name) return;
 
-      if (isGasEnv()) {
-        google.script.run
-          .withFailureHandler(() => {})
-          .saveDraftToScorecard(buildPayload());
-      } else {
-        const apiUrl = getEffectiveApiUrl();
-        if (apiUrl) {
-          fetch(apiUrl, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'saveDraft', ...buildPayload() })
-          }).catch(() => {});
+      // 通信中の場合はフラグを立てて直前通信完了後に最新状態を自動再送
+      if (isSyncingToSheet) {
+        hasPendingSheetSync = true;
+        return;
+      }
+
+      isSyncingToSheet = true;
+      const payload = buildPayload();
+
+      const onSyncFinish = () => {
+        isSyncingToSheet = false;
+        if (hasPendingSheetSync) {
+          hasPendingSheetSync = false;
+          // 最新のラウンド状態をキューから即座に再同期
+          setTimeout(triggerDraftSave, 100);
         }
+      };
+
+      try {
+        if (isGasEnv()) {
+          google.script.run
+            .withSuccessHandler(() => { onSyncFinish(); })
+            .withFailureHandler(err => {
+              console.warn('[AutoSync] Background draft save warning (will retry on next hole):', err);
+              onSyncFinish();
+            })
+            .saveDraftToScorecard(payload);
+        } else {
+          const apiUrl = getEffectiveApiUrl();
+          if (apiUrl) {
+            fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'saveDraft', payload: payload })
+            })
+            .then(() => { onSyncFinish(); })
+            .catch(err => {
+              console.warn('[AutoSync] WebAPI draft save warning (will retry on next hole):', err);
+              onSyncFinish();
+            });
+          } else {
+            onSyncFinish();
+          }
+        }
+      } catch (ex) {
+        console.warn('[AutoSync] triggerDraftSave exception:', ex);
+        onSyncFinish();
       }
     }
 
@@ -5645,7 +5685,10 @@ function renderHoleView() {
         };
       });
 
+      const curRoundId = (typeof getOrCreateCurrentRoundId === 'function') ? getOrCreateCurrentRoundId() : (state.roundId || '');
       return {
+        roundId: curRoundId,
+        round_id: curRoundId,
         date: state.date.replace(/[\/\-]/g, '/').slice(2), 
         courseName: state.courseName,
         frontHalf: state.frontHalf,
@@ -5694,6 +5737,16 @@ function renderHoleView() {
       });
     }
 
+    function getOrCreateCurrentRoundId() {
+      if (state.roundId) return state.roundId;
+      const dStr = (state.date || getTodayJstString()).replace(/[^0-9]/g, '');
+      const cId = state.courseId ? String(state.courseId).trim() : '00000';
+      const genId = `R${dStr}_${cId}`;
+      state.roundId = genId;
+      return genId;
+    }
+    window.getOrCreateCurrentRoundId = getOrCreateCurrentRoundId;
+
     function saveLocalStorage() {
       try {
         const dataStr = JSON.stringify(state);
@@ -5709,6 +5762,113 @@ function renderHoleView() {
       // 復元関数（restoreCurrentRound alias）
       restoreCurrentRound();
     }
+
+    // ★【クラウド自動復旧】キャッシュ消失時の二段構え自動リカバリー
+    function checkAndRecoverFromCloud() {
+      try {
+        // すでにローカルにスコア入力が存在する場合はローカル優先（上書き厳禁）
+        const hasLocalScores = state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0);
+        if (hasLocalScores) return;
+
+        const todayYYMMDD = (function() {
+          const jst = new Date(Date.now() + 9 * 3600 * 1000);
+          const y = String(jst.getFullYear()).slice(-2);
+          const m = ('0' + (jst.getMonth() + 1)).slice(-2);
+          const d = ('0' + jst.getDate()).slice(-2);
+          return `${y}/${m}/${d}`;
+        })();
+
+        const onAnalyticsLoaded = (analytics) => {
+          if (!analytics || !Array.isArray(analytics.allRounds) || analytics.allRounds.length === 0) return;
+          const topRound = analytics.allRounds[0];
+          if (!topRound) return;
+
+          // 本日日付かつ未完走（記録ホール数 1〜17）の判定
+          const isToday = (topRound.date === todayYYMMDD || topRound.date === todayYYMMDD.replace(/\//g, '-'));
+          const holeCnt = Number(topRound.scoredHolesCount) || 0;
+          const isUnfinished = (holeCnt >= 1 && holeCnt < 18);
+
+          if (isToday && isUnfinished) {
+            console.log('[Recovery] 本日の進行中ラウンドを検出。スプレッドシートから復旧します:', topRound);
+            
+            if (topRound.courseName) state.courseName = topRound.courseName;
+            if (topRound.courseId) state.courseId = topRound.courseId;
+            if (topRound.tee) state.tee = topRound.tee;
+            if (topRound.green) state.green = topRound.green;
+            if (topRound.weather) state.weather = topRound.weather;
+            if (topRound.roundId) state.roundId = topRound.roundId;
+
+            if (topRound.holes) {
+              if (Array.isArray(topRound.holes.pars)) state.pars = topRound.holes.pars;
+              if (Array.isArray(topRound.holes.yards)) state.yards = topRound.holes.yards;
+              if (Array.isArray(topRound.holes.hdcp)) state.hdcp = topRound.holes.hdcp;
+              
+              if (state.players && state.players[0]) {
+                if (Array.isArray(topRound.holes.scores)) state.players[0].scores = topRound.holes.scores;
+                if (Array.isArray(topRound.holes.putts)) state.players[0].putts = topRound.holes.putts;
+                if (Array.isArray(topRound.holes.ob)) state.players[0].obs = topRound.holes.ob;
+                if (Array.isArray(topRound.holes.pen)) state.players[0].penalties = topRound.holes.pen;
+                if (Array.isArray(topRound.holes.bunker)) state.players[0].bunkers = topRound.holes.bunker;
+              }
+              if (Array.isArray(topRound.holes.shots)) state.clubSequences = topRound.holes.shots;
+            }
+
+            // 同伴者スコア復元
+            if (Array.isArray(topRound.partners)) {
+              topRound.partners.forEach((pt, pIdx) => {
+                const targetIdx = pIdx + 1;
+                if (targetIdx < 4 && state.players[targetIdx]) {
+                  state.players[targetIdx].name = pt.name || '';
+                  if (Array.isArray(pt.scores)) state.players[targetIdx].scores = pt.scores;
+                  if (Array.isArray(pt.putts)) state.players[targetIdx].putts = pt.putts;
+                }
+              });
+            }
+
+            // 次に入力すべきホールへ移動（記録済みホールの次、最大18）
+            let lastRecordedHole = 0;
+            if (state.players[0] && Array.isArray(state.players[0].scores)) {
+              for (let h = 0; h < 18; h++) {
+                if (state.players[0].scores[h] > 0) lastRecordedHole = h + 1;
+              }
+            }
+            state.currentHole = Math.min(18, lastRecordedHole + 1);
+
+            saveLocalStorage();
+            renderMasterOptions(false);
+            renderHoleView();
+            showToast('☁️ 本日の進行中ラウンドデータをスプレッドシートから復旧しました');
+          }
+        };
+
+        const cached = safeStorage.getItem('MyScore_v1_Analytics');
+        if (cached) {
+          try {
+            onAnalyticsLoaded(JSON.parse(cached));
+          } catch (e) {}
+        }
+
+        // バックグラウンドで最新データを取得して再判定
+        const apiUrl = getEffectiveApiUrl();
+        if (isGasEnv()) {
+          google.script.run
+            .withSuccessHandler(res => {
+              if (res && res.success) onAnalyticsLoaded(res);
+            })
+            .getAnalyticsData('桑木', 'all', 'all');
+        } else if (apiUrl) {
+          fetch(apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=getAnalyticsData&playerName=' + encodeURIComponent('桑木') + '&period=all&course=all')
+            .then(r => r.json())
+            .then(res => {
+              if (res && res.success) onAnalyticsLoaded(res);
+            })
+            .catch(() => {});
+        }
+      } catch (err) {
+        console.warn('checkAndRecoverFromCloud warning:', err);
+      }
+    }
+
 
     function restoreCurrentRound() {
       let saved = null;
@@ -14191,6 +14351,7 @@ function renderHoleView() {
       try { initNetworkStatus(); } catch (e) { console.error('initNetworkStatus error:', e); }
       try { initEnvStatus(); } catch (e) { console.error('initEnvStatus error:', e); }
       try { loadLocalStorage(); } catch (e) { console.error('loadLocalStorage error:', e); }
+      try { checkAndRecoverFromCloud(); } catch (e) { console.error('checkAndRecoverFromCloud error:', e); }
 
       try {
         const dateEl = document.getElementById('inputDate');
@@ -14310,8 +14471,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.40 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.40 起動完了');
+            console.log('[ScoreRec] v1.0.41 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.41 起動完了');
           }
         }, 400);
       });
@@ -14319,8 +14480,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.40 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.40 起動完了');
+          console.log('[ScoreRec] v1.0.41 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.41 起動完了');
         }
       }, 400);
     }
