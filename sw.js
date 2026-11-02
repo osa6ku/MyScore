@@ -1,4 +1,4 @@
-const CACHE_NAME = 'myscore-pwa-v1.0.42';
+const CACHE_NAME = 'myscore-pwa-v1.0.48';
 const ASSETS = [
   './',
   './index.html',

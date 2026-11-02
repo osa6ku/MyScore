@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.42</title>
+  <title>マイスコア v1.0.48</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.42</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.48</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -1879,8 +1879,11 @@
     </div>
   </div>
   <div class="accordion-body open" id="accBody">
-    <div style="margin-bottom:6px; padding-bottom:4px; border-bottom:1px solid #e9ecef;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; padding-bottom:4px; border-bottom:1px solid #e9ecef;">
       <span style="font-size:11.5px; font-weight:bold; color:#1b4332;">⚙️ ラウンド・コース設定</span>
+      <button type="button" class="btn-sync" id="btnManualRestore" onclick="manualRestoreFromBackup();" style="background:#099268; padding:3px 8px; font-size:11px; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.15);">
+        📥 バックアップ呼び出し
+      </button>
     </div>
     <button type="button" class="btn-action-sm" id="btnSyncInner" onclick="handleMasterSync();" style="display:none;">
       🔄 スプレッドシートからマスター同期
@@ -2148,13 +2151,40 @@
   </div>
 
   <div class="modal-overlay" id="modalShuffle">
-    <div class="modal-content">
-      <div class="modal-title">打順決め</div>
-      <div class="shuffle-box" id="shuffleBox">
-        ボタンを押してシャッフルを開始
+    <div class="modal-content" style="max-width:340px; padding:16px;">
+      <div class="modal-title" style="margin-bottom:10px; font-size:1rem; font-weight:bold; color:#1b4332;">1番ホール（H1）初期打順決定</div>
+
+      <!-- モード切り替えタブ -->
+      <div style="display:flex; gap:6px; margin-bottom:12px; background:#f1f3f5; padding:3px; border-radius:6px;">
+        <button type="button" id="tabShuffleRandom" onclick="switchShuffleTab('random');" style="flex:1; padding:6px; font-size:0.8rem; font-weight:bold; border:none; border-radius:4px; background:#fff; color:#212529; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+          🎲 ランダム抽選
+        </button>
+        <button type="button" id="tabShuffleManual" onclick="switchShuffleTab('manual');" style="flex:1; padding:6px; font-size:0.8rem; font-weight:bold; border:none; border-radius:4px; background:transparent; color:#6c757d; cursor:pointer;">
+          👆 手動で指定
+        </button>
       </div>
-      <button class="btn-action-sm" id="btnStartShuffle">シャッフル開始</button>
-      <button class="btn-action-sm" style="background:#6c757d; margin-top:8px;" id="btnCloseShuffle">決定して閉じる</button>
+
+      <!-- ① ランダム抽選ビュー -->
+      <div id="shuffleRandomView">
+        <div class="shuffle-box" id="shuffleBox" style="margin-bottom:10px; min-height:80px; display:flex; flex-direction:column; justify-content:center; align-items:center; line-height:1.6; font-size:0.9rem;">
+          ボタンを押してシャッフルを開始
+        </div>
+        <button type="button" class="btn-action-sm" id="btnStartShuffle" style="background:#2b8a3e; padding:10px; font-size:0.9rem; font-weight:bold;">🎲 シャッフル開始</button>
+      </div>
+
+      <!-- ② 手動指定ビュー -->
+      <div id="shuffleManualView" style="display:none;">
+        <div style="font-size:0.75rem; color:#495057; margin-bottom:8px; line-height:1.4;">
+          タップした順番に1番打者〜4番打者を決定します。<br>
+          <span style="color:#2b8a3e; font-weight:bold;">※未選択のメンバーをタップして順に指定してください</span>
+        </div>
+        <div id="manualOrderCandidates" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;"></div>
+        <div style="font-size:0.75rem; font-weight:bold; color:#6c757d; margin-bottom:4px;">決定されたH1打順:</div>
+        <div id="manualOrderPreview" style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:8px; min-height:60px; font-size:0.85rem; line-height:1.5; margin-bottom:10px;"></div>
+        <button type="button" class="btn-action-sm" onclick="resetManualOrderSelection();" style="background:#adb5bd; color:#fff; font-size:0.75rem; padding:4px 8px; margin-bottom:6px;">↺ 選び直す</button>
+      </div>
+
+      <button type="button" class="btn-action-sm" style="background:#1b4332; margin-top:8px; padding:10px; font-size:0.9rem; font-weight:bold;" id="btnCloseShuffle">✅ 決定して閉じる</button>
     </div>
   </div>
 
@@ -3800,9 +3830,121 @@
       if (m) m.classList.add('open');
     }
 
+    // =================================================================
+    // 🎲 H1初期打順決定（ランダム抽選 or 手動指定）ロジック
+    // =================================================================
+    var currentShuffleTab = 'random';
+    var manualSelectedIndices = [];
+
+    function switchShuffleTab(tab) {
+      currentShuffleTab = tab;
+      const tabR = document.getElementById('tabShuffleRandom');
+      const tabM = document.getElementById('tabShuffleManual');
+      const viewR = document.getElementById('shuffleRandomView');
+      const viewM = document.getElementById('shuffleManualView');
+
+      if (tab === 'manual') {
+        if (tabR) { tabR.style.background = 'transparent'; tabR.style.color = '#6c757d'; tabR.style.boxShadow = 'none'; }
+        if (tabM) { tabM.style.background = '#fff'; tabM.style.color = '#212529'; tabM.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)'; }
+        if (viewR) viewR.style.display = 'none';
+        if (viewM) viewM.style.display = 'block';
+        initManualOrderUI();
+      } else {
+        if (tabM) { tabM.style.background = 'transparent'; tabM.style.color = '#6c757d'; tabM.style.boxShadow = 'none'; }
+        if (tabR) { tabR.style.background = '#fff'; tabR.style.color = '#212529'; tabR.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)'; }
+        if (viewM) viewM.style.display = 'none';
+        if (viewR) viewR.style.display = 'block';
+      }
+    }
+    window.switchShuffleTab = switchShuffleTab;
+
+    function openShuffleModal() {
+      const m = document.getElementById('modalShuffle');
+      if (m) m.classList.add('open');
+      manualSelectedIndices = [];
+      switchShuffleTab('random');
+      renderCurrentH1OrderPreview();
+    }
+    window.openShuffleModal = openShuffleModal;
+
+    function renderCurrentH1OrderPreview() {
+      const box = document.getElementById('shuffleBox');
+      if (!box) return;
+      const activeIndices = [0, 1, 2, 3].filter(i => state.players[i] && state.players[i].name && state.players[i].name.trim() !== '');
+      if (activeIndices.length === 0) {
+        box.textContent = 'メンバー枠から同伴者を選択してください';
+        return;
+      }
+      const order = state.initialH1Order || [0, 1, 2, 3];
+      const sorted = order.filter(idx => activeIndices.includes(idx));
+      box.innerHTML = sorted.map((idx, i) => `${i === 0 ? '★オナー: ' : (i + 1) + '番: '}${escapeHtml(state.players[idx].name)}`).join('<br>');
+    }
+
+    function initManualOrderUI() {
+      const candContainer = document.getElementById('manualOrderCandidates');
+      if (!candContainer) return;
+      candContainer.innerHTML = '';
+
+      const activeIndices = [0, 1, 2, 3].filter(i => state.players[i] && state.players[i].name && state.players[i].name.trim() !== '');
+      if (activeIndices.length === 0) {
+        candContainer.innerHTML = '<div style="grid-column:1/-1; color:#868e96; font-size:0.75rem;">メンバーが設定されていません</div>';
+        updateManualOrderPreview();
+        return;
+      }
+
+      activeIndices.forEach(idx => {
+        const isChosen = manualSelectedIndices.includes(idx);
+        const orderNum = isChosen ? (manualSelectedIndices.indexOf(idx) + 1) : null;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.style.cssText = `padding:8px 6px; font-size:0.82rem; font-weight:bold; border-radius:6px; cursor:pointer; text-align:center; transition:all 0.2s; border:1px solid ${isChosen ? '#2b8a3e' : '#ced4da'}; background:${isChosen ? '#ebfbee' : '#fff'}; color:${isChosen ? '#2b8a3e' : '#212529'};`;
+        btn.innerHTML = `<div>${escapeHtml(state.players[idx].name)}</div>${isChosen ? `<div style="font-size:0.7rem; color:#2b8a3e;">【${orderNum}番打者】</div>` : '<div style="font-size:0.68rem; color:#868e96;">タップして指定</div>'}`;
+        btn.onclick = () => {
+          if (isChosen) {
+            manualSelectedIndices = manualSelectedIndices.filter(i => i !== idx);
+          } else {
+            manualSelectedIndices.push(idx);
+          }
+          initManualOrderUI();
+          updateManualOrderPreview();
+        };
+        candContainer.appendChild(btn);
+      });
+      updateManualOrderPreview();
+    }
+
+    function resetManualOrderSelection() {
+      manualSelectedIndices = [];
+      initManualOrderUI();
+      updateManualOrderPreview();
+    }
+    window.resetManualOrderSelection = resetManualOrderSelection;
+
+    function updateManualOrderPreview() {
+      const prev = document.getElementById('manualOrderPreview');
+      if (!prev) return;
+      if (manualSelectedIndices.length === 0) {
+        prev.innerHTML = '<span style="color:#adb5bd;">タップした順番にここに表示されます</span>';
+        return;
+      }
+      prev.innerHTML = manualSelectedIndices.map((idx, i) => `<b>${i === 0 ? '★オナー(1番)' : (i + 1) + '番'}:</b> ${escapeHtml(state.players[idx].name)}`).join('<br>');
+    }
+
     function closeShuffleModal() {
       const m = document.getElementById('modalShuffle');
       if (m) m.classList.remove('open');
+
+      if (currentShuffleTab === 'manual' && manualSelectedIndices.length > 0) {
+        const activeIndices = [0, 1, 2, 3].filter(i => state.players[i] && state.players[i].name && state.players[i].name.trim() !== '');
+        const unselected = activeIndices.filter(i => !manualSelectedIndices.includes(i));
+        const remaining = [0, 1, 2, 3].filter(i => !manualSelectedIndices.includes(i) && !unselected.includes(i));
+        state.initialH1Order = [...manualSelectedIndices, ...unselected, ...remaining];
+        updateTomodachiCalculation();
+        saveLocalStorage();
+        triggerDraftSave();
+        showToast('✅ H1手動打順を決定・保存しました');
+      }
+
       renderHoleView();
     }
 
@@ -5760,12 +5902,31 @@ function renderHoleView() {
     }
     window.getOrCreateCurrentRoundId = getOrCreateCurrentRoundId;
 
+    // 🛡️ 進行中ラウンド有効データ検証ヘルパー（白紙データによる破壊上書き防止）
+    function isValidOngoingRound(st) {
+      if (!st) return false;
+      const hasCourse = Boolean(st.courseName && String(st.courseName).trim() !== '');
+      let hasScores = false;
+      let hasMembers = false;
+      if (st.players && Array.isArray(st.players)) {
+        if (st.players[0] && Array.isArray(st.players[0].scores)) {
+          hasScores = st.players[0].scores.some(s => Number(s) > 0);
+        }
+        hasMembers = st.players.slice(1).some(p => p && p.name && String(p.name).trim() !== '');
+      }
+      return hasCourse || hasScores || hasMembers;
+    }
+
     function saveLocalStorage() {
       try {
         const dataStr = JSON.stringify(state);
         safeStorage.setItem('MyScore_v1_State', dataStr);
-        // バックアップキーにも同時保存
         safeStorage.setItem('golf_current_round_backup', dataStr);
+
+        // ★【最重要】有効な進行中データが存在する場合のみ保護ストレージを更新（白紙上書き完全ガード）
+        if (isValidOngoingRound(state)) {
+          safeStorage.setItem('golf_protected_backup', dataStr);
+        }
       } catch (e) {
         console.warn('saveLocalStorage error:', e);
       }
@@ -5883,35 +6044,155 @@ function renderHoleView() {
     }
 
 
-    function restoreCurrentRound() {
-      let saved = null;
-      let isFromBackup = false;
+    // ★【手動復元】保護領域（golf_protected_backup）またはクラウドから直前のラウンドデータを即座に呼び出す
+    function manualRestoreFromBackup() {
+      let restoredObj = null;
+      let sourceName = '';
+
       try {
-        saved = safeStorage.getItem('MyScore_v1_State');
+        const protSaved = safeStorage.getItem('golf_protected_backup');
+        if (protSaved) {
+          const parsed = JSON.parse(protSaved);
+          if (isValidOngoingRound(parsed)) {
+            restoredObj = parsed;
+            sourceName = '端末の保護バックアップ';
+          }
+        }
       } catch (e) {
-        console.warn('Primary storage read failed:', e);
+        console.warn('Read golf_protected_backup error:', e);
       }
 
-      let parsedObj = null;
-      if (saved) {
+      if (!restoredObj) {
         try {
-          parsedObj = JSON.parse(saved);
+          const curSaved = safeStorage.getItem('golf_current_round_backup') || safeStorage.getItem('MyScore_v1_State');
+          if (curSaved) {
+            const parsed = JSON.parse(curSaved);
+            if (isValidOngoingRound(parsed)) {
+              restoredObj = parsed;
+              sourceName = 'ローカル直前データ';
+            }
+          }
+        } catch (e) {}
+      }
+
+      const applyAndNotify = (obj, src) => {
+        try {
+          Object.assign(state, obj);
+          saveLocalStorage();
+          renderMasterOptions(false);
+          renderHoleView();
+          closeAccordion();
+          showAppAlert(`【復元完了】\n${src}から直前のラウンド設定・メンバー・スコアを100%復旧しました。\n（コース: ${state.courseName || '-'} / 現在H: ${state.currentHole}）`, 'バックアップ復元');
+        } catch (err) {
+          showAppAlert('データ復元処理でエラーが発生しました: ' + err.message, '復元エラー');
+        }
+      };
+
+      if (restoredObj) {
+        const cName = restoredObj.courseName || 'ゴルフ場未設定';
+        const hNum = restoredObj.currentHole || 1;
+        showAppConfirm(
+          `【${sourceName}】を発見しました。\n\nコース: ${cName}\n直前のホール: H${hNum}\n\nこの設定と入力中スコアを画面に復元しますか？`,
+          'バックアップ呼び出し',
+          {
+            confirmText: '復元する',
+            cancelText: 'やめる',
+            onConfirm: () => {
+              applyAndNotify(restoredObj, sourceName);
+            }
+          }
+        );
+      } else {
+        // クラウドからの取得試行
+        showToast('端末内に保護データがありません。スプレッドシートを確認中...');
+        const apiUrl = getEffectiveApiUrl();
+        const onCloudData = (analytics) => {
+          if (!analytics || !Array.isArray(analytics.allRounds) || analytics.allRounds.length === 0) {
+            showAppAlert('スプレッドシート上にも復元可能な進行中ラウンドデータがありませんでした。', '復元データなし');
+            return;
+          }
+          const top = analytics.allRounds[0];
+          showAppConfirm(
+            `スプレッドシートから直近レコード（${top.date} ${top.courseName}）を取得しました。\nこのデータを復元しますか？`,
+            'クラウド復元',
+            {
+              confirmText: '復元する',
+              cancelText: 'やめる',
+              onConfirm: () => {
+                checkAndRecoverFromCloud();
+                renderMasterOptions(false);
+                renderHoleView();
+                closeAccordion();
+              }
+            }
+          );
+        };
+
+        if (isGasEnv()) {
+          google.script.run
+            .withSuccessHandler(onCloudData)
+            .withFailureHandler(e => showAppAlert('通信エラー: ' + e.message, '復元エラー'))
+            .getAnalyticsData('桑木', 'all', 'all');
+        } else if (apiUrl) {
+          fetch(apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=getAnalyticsData&playerName=桑木&period=all&course=all')
+            .then(r => r.json())
+            .then(onCloudData)
+            .catch(e => showAppAlert('通信エラー: ' + e.message, '復元エラー'));
+        } else {
+          showAppAlert('復元可能なバックアップデータが見つかりませんでした。', '復元データなし');
+        }
+      }
+    }
+    window.manualRestoreFromBackup = manualRestoreFromBackup;
+
+    function restoreCurrentRound() {
+      let parsedObj = null;
+      let isFromBackup = false;
+
+      // 1. 最優先: 保護領域（golf_protected_backup）からの復元試行
+      try {
+        const protSaved = safeStorage.getItem('golf_protected_backup');
+        if (protSaved) {
+          const p = JSON.parse(protSaved);
+          if (isValidOngoingRound(p)) {
+            parsedObj = p;
+            isFromBackup = true;
+            console.log('[Recovery] Restored state from golf_protected_backup (protected priority).');
+          }
+        }
+      } catch (e) {
+        console.warn('Protected storage read failed:', e);
+      }
+
+      // 2. 次点: 通常の保存キーからの復元試行
+      if (!parsedObj) {
+        try {
+          const saved = safeStorage.getItem('MyScore_v1_State');
+          if (saved) {
+            const p = JSON.parse(saved);
+            if (isValidOngoingRound(p)) {
+              parsedObj = p;
+            }
+          }
         } catch (parseErr) {
-          console.warn('Primary storage JSON parse failed, trying backup key:', parseErr);
+          console.warn('Primary storage parse failed:', parseErr);
         }
       }
 
-      // プライマリキーからのパースに失敗、または空の場合はバックアップキーから再試行
+      // 3. バックアップキーからの復元試行
       if (!parsedObj) {
         try {
           const backupSaved = safeStorage.getItem('golf_current_round_backup');
           if (backupSaved) {
-            parsedObj = JSON.parse(backupSaved);
-            isFromBackup = true;
-            console.log('Restored state from golf_current_round_backup.');
+            const p = JSON.parse(backupSaved);
+            if (isValidOngoingRound(p)) {
+              parsedObj = p;
+              isFromBackup = true;
+              console.log('Restored state from golf_current_round_backup.');
+            }
           }
         } catch (backupErr) {
-          console.warn('Backup storage JSON parse failed:', backupErr);
+          console.warn('Backup storage parse failed:', backupErr);
         }
       }
 
@@ -8446,12 +8727,16 @@ function renderHoleView() {
               state.players[i - 1].name = clean;
               updateMemberDropdowns();
               renderHoleView();
+              saveLocalStorage();
+              triggerDraftSave();
             }, state.players[i - 1].name);
           } else {
             const clean = String(e.target.value || '').replace(/\s+/g, '');
             state.players[i - 1].name = clean;
             updateMemberDropdowns();
             renderHoleView();
+            saveLocalStorage();
+            triggerDraftSave();
           }
         });
       }
@@ -14446,6 +14731,17 @@ function renderHoleView() {
           }
         }
 
+        // ★【キル再起動耐性】コース一覧DOM生成後に保護データを最終再適用
+        try {
+          const protSaved = safeStorage.getItem('golf_protected_backup');
+          if (protSaved) {
+            const protObj = JSON.parse(protSaved);
+            if (isValidOngoingRound(protObj)) {
+              Object.assign(state, protObj);
+            }
+          }
+        } catch (e) {}
+
         renderMasterOptions(false);
 
         if (state.courseName && typeof fetchCourseStrategiesIfNeeded === 'function') {
@@ -14498,8 +14794,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.42 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.42 起動完了');
+            console.log('[ScoreRec] v1.0.48 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.48 起動完了');
           }
         }, 400);
       });
@@ -14507,8 +14803,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.42 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.42 起動完了');
+          console.log('[ScoreRec] v1.0.48 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.48 起動完了');
         }
       }, 400);
     }
