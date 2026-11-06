@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.48</title>
+  <title>マイスコア v1.0.49</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.48</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.49</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -3044,50 +3044,6 @@
     </div>
   </div>
 
-  <!-- 🔒 オーナーPIN認証モーダル (ScoreRec本体保護 v2.6.0) -->
-  <div class="modal-overlay" id="modalAdminPin" style="display:none !important; z-index: 100030; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);">
-    <div class="modal-content" style="max-width:320px; padding:24px 20px; text-align:center; border-radius:16px; box-shadow:0 12px 36px rgba(0,0,0,0.4); background:#ffffff;">
-      <div style="font-size:2.4rem; margin-bottom:8px;">🔒</div>
-      <div style="font-weight:bold; font-size:1.1rem; color:#1b4332; margin-bottom:4px;">マイスコア オーナー認証</div>
-      <div style="font-size:0.75rem; color:#6c757d; margin-bottom:18px;">
-        本体（スコア記録）を開くには<br>4桁の暗証番号を入力してください
-      </div>
-
-      <!-- 4桁インジケータードット -->
-      <div style="display:flex; justify-content:center; gap:14px; margin-bottom:20px;">
-        <div class="pin-dot" id="pinDot0" style="width:16px; height:16px; border-radius:50%; border:2px solid #ced4da; background:#fff; transition:all 0.15s ease;"></div>
-        <div class="pin-dot" id="pinDot1" style="width:16px; height:16px; border-radius:50%; border:2px solid #ced4da; background:#fff; transition:all 0.15s ease;"></div>
-        <div class="pin-dot" id="pinDot2" style="width:16px; height:16px; border-radius:50%; border:2px solid #ced4da; background:#fff; transition:all 0.15s ease;"></div>
-        <div class="pin-dot" id="pinDot3" style="width:16px; height:16px; border-radius:50%; border:2px solid #ced4da; background:#fff; transition:all 0.15s ease;"></div>
-      </div>
-
-      <!-- エラーメッセージ表示枠 -->
-      <div id="pinErrorMsg" style="font-size:0.75rem; color:#e03131; font-weight:bold; min-height:18px; margin-bottom:12px;"></div>
-
-      <!-- テンキーパッド -->
-      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; max-width:240px; margin:0 auto 16px auto;">
-        <button type="button" class="pin-key-btn" onclick="pressPinKey('1');" style="height:50px; font-size:1.35rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#f8f9fa; color:#212529; cursor:pointer;">1</button>
-        <button type="button" class="pin-key-btn" onclick="pressPinKey('2');" style="height:50px; font-size:1.35rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#f8f9fa; color:#212529; cursor:pointer;">2</button>
-        <button type="button" class="pin-key-btn" onclick="pressPinKey('3');" style="height:50px; font-size:1.35rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#f8f9fa; color:#212529; cursor:pointer;">3</button>
-        <button type="button" class="pin-key-btn" onclick="pressPinKey('4');" style="height:50px; font-size:1.35rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#f8f9fa; color:#212529; cursor:pointer;">4</button>
-        <button type="button" class="pin-key-btn" onclick="pressPinKey('5');" style="height:50px; font-size:1.35rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#f8f9fa; color:#212529; cursor:pointer;">5</button>
-        <button type="button" class="pin-key-btn" onclick="pressPinKey('6');" style="height:50px; font-size:1.35rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#f8f9fa; color:#212529; cursor:pointer;">6</button>
-        <button type="button" class="pin-key-btn" onclick="pressPinKey('7');" style="height:50px; font-size:1.35rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#f8f9fa; color:#212529; cursor:pointer;">7</button>
-        <button type="button" class="pin-key-btn" onclick="pressPinKey('8');" style="height:50px; font-size:1.35rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#f8f9fa; color:#212529; cursor:pointer;">8</button>
-        <button type="button" class="pin-key-btn" onclick="pressPinKey('9');" style="height:50px; font-size:1.35rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#f8f9fa; color:#212529; cursor:pointer;">9</button>
-        <button type="button" class="pin-key-btn" onclick="clearPinKey();" style="height:50px; font-size:0.85rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#e9ecef; color:#495057; cursor:pointer;">C</button>
-        <button type="button" class="pin-key-btn" onclick="pressPinKey('0');" style="height:50px; font-size:1.35rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#f8f9fa; color:#212529; cursor:pointer;">0</button>
-        <button type="button" class="pin-key-btn" onclick="backspacePinKey();" style="height:50px; font-size:1.1rem; font-weight:bold; border-radius:25px; border:1px solid #dee2e6; background:#e9ecef; color:#495057; cursor:pointer;">⌫</button>
-      </div>
-
-      <div style="border-top:1px solid #e9ecef; padding-top:12px; margin-top:8px;">
-        <button type="button" class="btn-action-sm" onclick="switchToAnalyticsFromPin();" style="background:#1971c2; font-size:0.8rem; padding:8px 12px; width:100%; border-radius:6px; font-weight:bold;">
-          📊 4名限定 スコア分析を開く
-        </button>
-      </div>
-      <div style="font-size:0.68rem; color:#868e96; margin-top:8px;">※一度認証すると端末に記憶され、次回から自動で開きます。</div>
-    </div>
-  </div>
 
   <!-- 🛰️ GPS衛星ショット軌跡 & 一打記録 モーダル -->
   <div class="modal-overlay" id="modalShotTracer">
@@ -3408,6 +3364,86 @@
       return jst.toISOString().split('T')[0];
     }
 
+    // 👥 メンバー名正規化 & ダミー名除外 共通ヘルパー（表記ゆれ対策の一元化）
+    const DUMMY_MEMBER_NAMES = new Set(['自分', 'メンバー名', '佐藤', '鈴木', '高橋', '田中', '渡辺']);
+    const MEMBER_NAME_ALIASES = {
+      '角陸信彦': '角陸伸彦',
+      '西山明彦': '西山明宏',
+      '稲田荘': '稲田壮',
+      '稲田さな': '稲田壮',
+      '水木': '水木雅之',
+      '堀': '堀覚',
+      '太田': '太田あいり'
+    };
+
+    function normalizeMemberName(raw) {
+      const str = (raw && typeof raw === 'object') ? (raw.name || raw.playerName || '') : String(raw || '');
+      let clean = String(str).trim().replace(/[\s\u3000]+/g, '');
+      if (clean.endsWith('さん') && clean.length > 2) clean = clean.slice(0, -2);
+      if (clean.endsWith('様') && clean.length > 1) clean = clean.slice(0, -1);
+      if (!clean || DUMMY_MEMBER_NAMES.has(clean)) return '';
+      return MEMBER_NAME_ALIASES[clean] || clean;
+    }
+    window.normalizeMemberName = normalizeMemberName;
+
+    function cleanMemberList(list) {
+      if (!Array.isArray(list)) return [];
+      const seen = new Set();
+      const result = [];
+      list.forEach(item => {
+        const clean = normalizeMemberName(item);
+        if (clean && !seen.has(clean)) {
+          seen.add(clean);
+          result.push(clean);
+        }
+      });
+      if (seen.has('桑木修') && seen.has('桑木')) {
+        return result.filter(n => n !== '桑木');
+      }
+      return result;
+    }
+    window.cleanMemberList = cleanMemberList;
+
+    // 🏌️ プレイヤーデータ初期化・健全性保証 共通ヘルパー
+    function createDefaultPlayer(name = '') {
+      return {
+        name: name,
+        scores: new Array(18).fill(0),
+        putts: new Array(18).fill(null),
+        bunkers: new Array(18).fill(null),
+        obs: new Array(18).fill(null),
+        penalties: new Array(18).fill(null),
+        tomodachiPoints: new Array(18).fill(0)
+      };
+    }
+
+    function createDefaultPlayers(ownerName = '桑木修') {
+      return [
+        createDefaultPlayer(ownerName),
+        createDefaultPlayer(''),
+        createDefaultPlayer(''),
+        createDefaultPlayer('')
+      ];
+    }
+
+    function ensureValidPlayersState() {
+      if (!state.players || !Array.isArray(state.players)) {
+        state.players = createDefaultPlayers('桑木修');
+        return;
+      }
+      const defaultNames = ['桑木修', '', '', ''];
+      for (let i = 0; i < 4; i++) {
+        if (!state.players[i]) {
+          state.players[i] = createDefaultPlayer(defaultNames[i]);
+        } else if (i === 0 && (!state.players[0].name || !String(state.players[0].name).trim())) {
+          state.players[0].name = '桑木修';
+        }
+      }
+    }
+    window.createDefaultPlayer = createDefaultPlayer;
+    window.createDefaultPlayers = createDefaultPlayers;
+    window.ensureValidPlayersState = ensureValidPlayersState;
+
     var state = window.state = {
       currentHole: 1,
       roundId: null,
@@ -3427,12 +3463,7 @@
       hdcp: new Array(18).fill(null),
       strategies: new Array(18).fill(''),
       recommendedHoles: new Array(18).fill(null),
-      players: [
-        { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) },
-        { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) },
-        { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) },
-        { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) }
-      ],
+      players: createDefaultPlayers(''),
       nearpins: new Array(18).fill(''),
       useGps: false,
       memos: new Array(18).fill(''),
@@ -3638,6 +3669,17 @@
       return window.btoa(binary);
     }
 
+    async function mergeScorebookPdfBase64(existingBase64, newBase64) {
+      const existingBytes = base64ToArrayBuffer(existingBase64);
+      const newBytes = base64ToArrayBuffer(newBase64);
+      const existingPdfDoc = await PDFLib.PDFDocument.load(existingBytes);
+      const newPdfDoc = await PDFLib.PDFDocument.load(newBytes);
+      const [copiedPage] = await existingPdfDoc.copyPages(newPdfDoc, [0]);
+      existingPdfDoc.insertPage(0, copiedPage);
+      const mergedBytes = await existingPdfDoc.save();
+      return arrayBufferToBase64(mergedBytes);
+    }
+
     // =================================================================
     // 🛡️ アプリ内汎用ダイアログ (confirm / alert / prompt 完全代替システム)
     // ※Chrome 92+/Safari によるクロスオリジンiframe内ダイアログブロックの完全対策
@@ -3825,11 +3867,6 @@
     }
     window.closeAccordion = closeAccordion;
 
-    function openShuffleModal() {
-      const m = document.getElementById('modalShuffle');
-      if (m) m.classList.add('open');
-    }
-
     // =================================================================
     // 🎲 H1初期打順決定（ランダム抽選 or 手動指定）ロジック
     // =================================================================
@@ -4015,14 +4052,8 @@
       state.tee = '';
       state.green = '';
       // ★ 1人目（本人: 桑木修）のみ初期設定、2〜4人目はデフォルトで空欄（未選択）
-      const defaultNames = ['桑木修', '', '', ''];
-      for (let i = 0; i < 4; i++) {
-        if (!state.players[i]) {
-          state.players[i] = { name: defaultNames[i], scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) };
-        } else {
-          state.players[i].name = defaultNames[i];
-        }
-      }
+      ensureValidPlayersState();
+      state.players.forEach((p, idx) => { p.name = (idx === 0) ? '桑木修' : ''; });
       const fRow = (masterData.courses || []).find(c => c.courseName === state.courseName && c.halfName === 'OUT');
       const bRow = (masterData.courses || []).find(c => c.courseName === state.courseName && c.halfName === 'IN');
       if (fRow && bRow && fRow.pars && bRow.pars) {
@@ -4270,6 +4301,32 @@
       updateSyncBtns('同期中...', false);
       if (!silentBackground) showToast('全国ゴルフ場マスターを同期中...');
 
+      const applyMasterSyncSuccess = (res, badgeLabel, forceResetIfEmpty, saveAlways) => {
+        ensureMasterCoursesExpanded(res);
+        masterData = res;
+        persistMasterDataToStorage(res);
+
+        const hasLocalRound = Boolean(
+          (state.courseName && state.courseName.trim() !== '') ||
+          (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0))
+        );
+        if (forceResetIfEmpty && !hasLocalRound) {
+          state.courseName = '';
+          state.frontHalf = '';
+          state.backHalf = '';
+          state.tee = '';
+          state.green = '';
+          ensureValidPlayersState();
+          state.players.forEach((p, idx) => { p.name = (idx === 0) ? '桑木修' : ''; });
+          renderMasterOptions(true);
+        } else {
+          renderMasterOptions(false);
+        }
+        renderHoleView();
+        if (saveAlways || hasLocalRound) saveLocalStorage();
+        updateSyncBtns(badgeLabel, true);
+      };
+
       if (isGas) {
         if (!navigator.onLine) {
           isMasterSyncing = false;
@@ -4282,27 +4339,7 @@
           .withSuccessHandler(res => {
             isMasterSyncing = false;
             if (res && res.success) {
-              ensureMasterCoursesExpanded(res);
-              masterData = res;
-              persistMasterDataToStorage(res);
-
-              const hasLocalRound1 = (state.courseName && state.courseName.trim() !== '') ||
-                                     (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
-              if (!silentBackground && !hasLocalRound1) {
-                state.courseName = '';
-                state.frontHalf = '';
-                state.backHalf = '';
-                state.tee = '';
-                state.green = '';
-                state.players.forEach((p, idx) => { p.name = (idx === 0) ? '桑木修' : ''; });
-                renderMasterOptions(true);
-              } else {
-                renderMasterOptions(false);
-              }
-              renderHoleView();
-              saveLocalStorage();
-
-              updateSyncBtns('マスター同期済', true);
+              applyMasterSyncSuccess(res, 'マスター同期済', !silentBackground, true);
               const uniqueCourseCount = res.totalCourses || (res.courseCatalog ? res.courseCatalog.length : 0);
               const mCount = res.members ? res.members.length : 0;
               if (uniqueCourseCount === 0) {
@@ -4328,27 +4365,7 @@
           .then(res => {
             isMasterSyncing = false;
             if (res && res.success) {
-              ensureMasterCoursesExpanded(res);
-              masterData = res;
-              persistMasterDataToStorage(res);
-
-              const hasLocalRound2 = (state.courseName && state.courseName.trim() !== '') ||
-                                     (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
-              if (!silentBackground && !hasLocalRound2) {
-                state.courseName = '';
-                state.frontHalf = '';
-                state.backHalf = '';
-                state.tee = '';
-                state.green = '';
-                state.players.forEach((p, idx) => { p.name = (idx === 0) ? '桑木修' : ''; });
-                renderMasterOptions(true);
-              } else {
-                renderMasterOptions(false);
-              }
-              renderHoleView();
-              if (hasLocalRound2) saveLocalStorage();
-
-              updateSyncBtns('WebAPI同期済', true);
+              applyMasterSyncSuccess(res, 'WebAPI同期済', !silentBackground, false);
               const uniqueCourseCount = res.totalCourses || (res.courseCatalog ? res.courseCatalog.length : 0);
               const mCount = res.members ? res.members.length : 0;
               showToast(`同期完了: 全国${uniqueCourseCount.toLocaleString()}コース / メンバー${mCount}名`);
@@ -4365,26 +4382,8 @@
         // ローカル環境用フォールバック
         setTimeout(() => {
           isMasterSyncing = false;
-          masterData = ensureMasterCoursesExpanded(JSON.parse(JSON.stringify(defaultMasterData)));
-          persistMasterDataToStorage(masterData);
-
-          const hasLocalRoundLocal = (state.courseName && state.courseName.trim() !== '') ||
-                                     (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
-          if (!hasLocalRoundLocal) {
-            state.courseName = '';
-            state.frontHalf = '';
-            state.backHalf = '';
-            state.tee = '';
-            state.green = '';
-            state.players.forEach((p, idx) => { p.name = (idx === 0) ? '桑木修' : ''; });
-            renderMasterOptions(true);
-          } else {
-            renderMasterOptions(false);
-          }
-          renderHoleView();
-          if (hasLocalRoundLocal) saveLocalStorage();
-
-          updateSyncBtns('同期済 (ローカル)', true);
+          const localRes = JSON.parse(JSON.stringify(defaultMasterData));
+          applyMasterSyncSuccess(localRes, '同期済 (ローカル)', true, false);
           const cCount = masterData.courseCatalog ? masterData.courseCatalog.length : 0;
           const mCount = masterData.members ? masterData.members.length : 0;
           showToast(`同期完了: コース${cCount}件 / メンバー${mCount}件`);
@@ -4512,24 +4511,10 @@
 
       filterCourseSelectOptions();
 
+      const uniqueMembers = cleanMemberList(masterData.members);
       for (let i = 1; i <= 4; i++) {
         const mSel = document.getElementById('member' + i);
         mSel.innerHTML = '<option value="">選択</option>';
-        const uniqueMembers = [];
-        masterData.members.forEach(name => {
-          let clean = String(name || '').trim().replace(/\s+/g, '');
-          if (clean.endsWith('さん') && clean.length > 2) clean = clean.slice(0, -2);
-          if (clean.endsWith('様') && clean.length > 1) clean = clean.slice(0, -1);
-          if (clean === '角陸信彦') clean = '角陸伸彦';
-          if (clean === '西山明彦') clean = '西山明宏';
-          if (clean === '稲田荘' || clean === '稲田さな') clean = '稲田壮';
-          if (clean === '水木') clean = '水木雅之';
-          if (clean === '堀') clean = '堀覚';
-          if (clean === '太田') clean = '太田あいり';
-          if (clean && !uniqueMembers.includes(clean)) {
-            uniqueMembers.push(clean);
-          }
-        });
         uniqueMembers.forEach(clean => {
           mSel.innerHTML += `<option value="${clean}">${clean}</option>`;
         });
@@ -4541,6 +4526,8 @@
       // 🛡️ 進行中ラウンド判定: 入力済みスコアまたはゴルフ場が設定されている場合は絶対に白紙初期化しない
       const hasOngoingRound = (state.courseName && state.courseName.trim() !== '') ||
                               (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
+
+      ensureValidPlayersState();
 
       // もしリセット時、あるいはゴルフ場が未設定・無効の場合（※進行中ラウンドがある場合はリセットを完全バイパス）
       if (!hasOngoingRound && (resetSelections || !state.courseName || !uniqueCourses.includes(state.courseName))) {
@@ -4555,14 +4542,6 @@
         document.getElementById('selectTee').innerHTML = placeholderHtml;
         document.getElementById('selectGreen').innerHTML = placeholderHtml;
 
-        // ★重要: 本人（1人目: 桑木修）は絶対に空にしない！
-        if (!state.players[0] || !state.players[0].name || state.players[0].name.trim() === '') {
-          if (!state.players[0]) {
-            state.players[0] = { name: '桑木修', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) };
-          } else {
-            state.players[0].name = '桑木修';
-          }
-        }
         const m1El = document.getElementById('member1');
         if (m1El) m1El.value = state.players[0].name;
 
@@ -4573,13 +4552,6 @@
         document.getElementById('headerCourseName').textContent = '設定: ゴルフ場を選択';
       } else {
         courseSel.value = state.courseName;
-        if (!state.players[0] || !state.players[0].name) {
-          if (!state.players[0]) {
-            state.players[0] = { name: '桑木修', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) };
-          } else {
-            state.players[0].name = '桑木修';
-          }
-        }
         for (let i = 1; i <= 4; i++) {
           if (state.players[i - 1] && state.players[i - 1].name) {
             const mEl = document.getElementById('member' + i);
@@ -4994,17 +4966,37 @@ function renderHoleView() {
       let fullCardsHtml = '';
 
       // 🛡️ 本人（1人目: 桑木修）は名前が未設定でも絶対に描画を保証（同伴者2〜4人目はデフォルト空欄）
-      if (!state.players || !state.players[0]) {
-        state.players = [
-          { name: '桑木修', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) },
-          { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) },
-          { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) },
-          { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) }
-        ];
-      }
-      if (!state.players[0].name || state.players[0].name.trim() === '') {
-        state.players[0].name = '桑木修';
-      }
+      ensureValidPlayersState();
+
+      const renderOwnerSubControlsHtml = (p, marginTopStyle = '') => {
+        const currentPutt = (p.putts[hIdx] !== null && p.putts[hIdx] !== undefined) ? p.putts[hIdx] : null;
+        const bunkerVal = (p.bunkers && p.bunkers[hIdx] !== null) ? p.bunkers[hIdx] : 0;
+        const obVal = (p.obs && p.obs[hIdx] !== null) ? p.obs[hIdx] : 0;
+        const penVal = (p.penalties && p.penalties[hIdx] !== null) ? p.penalties[hIdx] : 0;
+        return `
+          <div class="putt-palette-row"${marginTopStyle ? ` style="${marginTopStyle}"` : ''}>
+            <span class="putt-palette-label">⛳️ パット</span>
+            <div class="putt-palette-grid">
+              <button type="button" class="putt-btn ${currentPutt === 0 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 0)">0</button>
+              <button type="button" class="putt-btn ${currentPutt === 1 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 1)">1</button>
+              <button type="button" class="putt-btn ${currentPutt === 2 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 2)">2</button>
+              <button type="button" class="putt-btn ${currentPutt === 3 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 3)">3</button>
+              <button type="button" class="putt-btn ${(currentPutt !== null && currentPutt >= 4) ? 'active' : ''}" onclick="handleMaxPuttButton(${hIdx})">${(currentPutt !== null && currentPutt >= 4) ? currentPutt : '4+'}</button>
+            </div>
+          </div>
+          <div class="sub-toggle-grid">
+            <button type="button" class="sub-toggle-btn ${bunkerVal > 0 ? 'has-count' : ''}" onclick="toggleSubStat('bunkers', ${hIdx})">
+              🏖 バンカー: ${bunkerVal > 0 ? bunkerVal : 0}
+            </button>
+            <button type="button" class="sub-toggle-btn ${obVal > 0 ? 'ob-count' : ''}" onclick="toggleSubStat('obs', ${hIdx})">
+              🔴 OB: ${obVal > 0 ? obVal : 0}
+            </button>
+            <button type="button" class="sub-toggle-btn ${penVal > 0 ? 'has-count' : ''}" onclick="toggleSubStat('penalties', ${hIdx})">
+              🟠 1ペナ: ${penVal > 0 ? penVal : 0}
+            </button>
+          </div>
+        `;
+      };
 
       state.players.forEach((p, idx) => {
         if (idx === 0 && (!p.name || p.name.trim() === '')) {
@@ -5049,35 +5041,7 @@ function renderHoleView() {
               </button>
               ${renderClubSeqPreviewHtml(hIdx)}
             </div>
-          `;
-
-          const currentPutt = (p.putts[hIdx] !== null && p.putts[hIdx] !== undefined) ? p.putts[hIdx] : null;
-          const bunkerVal = (p.bunkers && p.bunkers[hIdx] !== null) ? p.bunkers[hIdx] : 0;
-          const obVal = (p.obs && p.obs[hIdx] !== null) ? p.obs[hIdx] : 0;
-          const penVal = (p.penalties && p.penalties[hIdx] !== null) ? p.penalties[hIdx] : 0;
-
-          html += `
-            <div class="putt-palette-row" style="margin-top:6px;">
-              <span class="putt-palette-label">⛳️ パット</span>
-              <div class="putt-palette-grid">
-                <button type="button" class="putt-btn ${currentPutt === 0 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 0)">0</button>
-                <button type="button" class="putt-btn ${currentPutt === 1 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 1)">1</button>
-                <button type="button" class="putt-btn ${currentPutt === 2 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 2)">2</button>
-                <button type="button" class="putt-btn ${currentPutt === 3 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 3)">3</button>
-                <button type="button" class="putt-btn ${(currentPutt !== null && currentPutt >= 4) ? 'active' : ''}" onclick="handleMaxPuttButton(${hIdx})">${(currentPutt !== null && currentPutt >= 4) ? currentPutt : '4+'}</button>
-              </div>
-            </div>
-            <div class="sub-toggle-grid">
-              <button type="button" class="sub-toggle-btn ${bunkerVal > 0 ? 'has-count' : ''}" onclick="toggleSubStat('bunkers', ${hIdx})">
-                🏖 バンカー: ${bunkerVal > 0 ? bunkerVal : 0}
-              </button>
-              <button type="button" class="sub-toggle-btn ${obVal > 0 ? 'ob-count' : ''}" onclick="toggleSubStat('obs', ${hIdx})">
-                🔴 OB: ${obVal > 0 ? obVal : 0}
-              </button>
-              <button type="button" class="sub-toggle-btn ${penVal > 0 ? 'has-count' : ''}" onclick="toggleSubStat('penalties', ${hIdx})">
-                🟠 1ペナ: ${penVal > 0 ? penVal : 0}
-              </button>
-            </div>
+            ${renderOwnerSubControlsHtml(p, 'margin-top:6px;')}
             <div style="display:flex; gap:6px; margin-top:6px; ${state.useGps ? '' : 'display:none;'}">
               <button type="button" class="gps-tracer-btn" onclick="openShotTracerModal(${hIdx})" style="width:100%; background:linear-gradient(135deg, #1b4332, #2d6a4f); color:#fff; border:${(state.shotLogs && state.shotLogs[hIdx] && state.shotLogs[hIdx].length > 0) ? '1.5px solid #ffd166' : 'none'}; border-radius:6px; padding:7px 8px; font-size:0.77rem; font-weight:bold; cursor:pointer; display:${state.useGps ? 'flex' : 'none'}; align-items:center; justify-content:center; gap:4px; box-shadow:${(state.shotLogs && state.shotLogs[hIdx] && state.shotLogs[hIdx].length > 0) ? '0 0 6px rgba(255,209,102,0.5)' : 'none'};">
                 🛰️ GPS軌跡マップ (${getShotCountBadge(hIdx)}) ➔
@@ -5108,33 +5072,8 @@ function renderHoleView() {
           `;
 
           if (isOwner) {
-            const currentPutt = (p.putts[hIdx] !== null && p.putts[hIdx] !== undefined) ? p.putts[hIdx] : null;
-            const bunkerVal = (p.bunkers && p.bunkers[hIdx] !== null) ? p.bunkers[hIdx] : 0;
-            const obVal = (p.obs && p.obs[hIdx] !== null) ? p.obs[hIdx] : 0;
-            const penVal = (p.penalties && p.penalties[hIdx] !== null) ? p.penalties[hIdx] : 0;
-
             html += `
-              <div class="putt-palette-row">
-                <span class="putt-palette-label">⛳️ パット</span>
-                <div class="putt-palette-grid">
-                  <button type="button" class="putt-btn ${currentPutt === 0 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 0)">0</button>
-                  <button type="button" class="putt-btn ${currentPutt === 1 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 1)">1</button>
-                  <button type="button" class="putt-btn ${currentPutt === 2 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 2)">2</button>
-                  <button type="button" class="putt-btn ${currentPutt === 3 ? 'active' : ''}" onclick="setPuttsDirect(${hIdx}, 3)">3</button>
-                  <button type="button" class="putt-btn ${(currentPutt !== null && currentPutt >= 4) ? 'active' : ''}" onclick="handleMaxPuttButton(${hIdx})">${(currentPutt !== null && currentPutt >= 4) ? currentPutt : '4+'}</button>
-                </div>
-              </div>
-              <div class="sub-toggle-grid">
-                <button type="button" class="sub-toggle-btn ${bunkerVal > 0 ? 'has-count' : ''}" onclick="toggleSubStat('bunkers', ${hIdx})">
-                  🏖 バンカー: ${bunkerVal > 0 ? bunkerVal : 0}
-                </button>
-                <button type="button" class="sub-toggle-btn ${obVal > 0 ? 'ob-count' : ''}" onclick="toggleSubStat('obs', ${hIdx})">
-                  🔴 OB: ${obVal > 0 ? obVal : 0}
-                </button>
-                <button type="button" class="sub-toggle-btn ${penVal > 0 ? 'has-count' : ''}" onclick="toggleSubStat('penalties', ${hIdx})">
-                  🟠 1ペナ: ${penVal > 0 ? penVal : 0}
-                </button>
-              </div>
+              ${renderOwnerSubControlsHtml(p)}
               <div style="display:flex; gap:6px; margin-top:6px;">
                 <button type="button" onclick="openClubSequenceModal(${hIdx})" style="flex:1.1; background:linear-gradient(135deg, #099268, #087f5b); color:#fff; border:${(state.clubSequences && state.clubSequences[hIdx] && state.clubSequences[hIdx].length > 0) ? '1.5px solid #a9e34b' : 'none'}; border-radius:6px; padding:7px 8px; font-size:0.79rem; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; box-shadow:${(state.clubSequences && state.clubSequences[hIdx] && state.clubSequences[hIdx].length > 0) ? '0 0 6px rgba(169,227,75,0.45)' : 'none'};">
                   🏌️ クラブ順入力 (${getClubSeqBadge(hIdx)})
@@ -6218,18 +6157,7 @@ function renderHoleView() {
               }
             });
           }
-          if (!state.players || !state.players[0] || !state.players[0].name) {
-            if (!state.players) state.players = [];
-            // ★ 1人目（本人: 桑木修）のみ初期設定、2〜4人目はデフォルトで空欄（未選択）
-            const defaultNames = ['桑木修', '', '', ''];
-            for (let i = 0; i < 4; i++) {
-              if (!state.players[i]) {
-                state.players[i] = { name: defaultNames[i], scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) };
-              } else if (!state.players[i].name) {
-                state.players[i].name = defaultNames[i];
-              }
-            }
-          }
+          ensureValidPlayersState();
           if (!state.shotLogs || !Array.isArray(state.shotLogs)) {
             state.shotLogs = Array(18).fill(null).map(() => []);
           } else {
@@ -7821,18 +7749,7 @@ function renderHoleView() {
                           throw new Error('PDF結合ライブラリ (pdf-lib) が読み込まれていません。通信状況を確認してください。');
                         }
 
-                        const existingBytes = base64ToArrayBuffer(res.existingPdfBase64);
-                        const newBytes = base64ToArrayBuffer(res.newPdfBase64);
-
-                        const existingPdfDoc = await PDFLib.PDFDocument.load(existingBytes);
-                        const newPdfDoc = await PDFLib.PDFDocument.load(newBytes);
-
-                        // 最新ラウンド（1ページ目）をコピーして、既存スコアブックの先頭（Page 0）に挿入
-                        const [copiedPage] = await existingPdfDoc.copyPages(newPdfDoc, [0]);
-                        existingPdfDoc.insertPage(0, copiedPage);
-
-                        const mergedBytes = await existingPdfDoc.save();
-                        const mergedBase64 = arrayBufferToBase64(mergedBytes);
+                        const mergedBase64 = await mergeScorebookPdfBase64(res.existingPdfBase64, res.newPdfBase64);
 
                         btn.textContent = 'スコアブック保存中...';
                         google.script.run
@@ -7919,14 +7836,7 @@ function renderHoleView() {
                         return;
                       }
 
-                      const existingBytes = base64ToArrayBuffer(res.existingPdfBase64);
-                      const newBytes = base64ToArrayBuffer(res.newPdfBase64);
-                      const existingPdfDoc = await PDFLib.PDFDocument.load(existingBytes);
-                      const newPdfDoc = await PDFLib.PDFDocument.load(newBytes);
-                      const [copiedPage] = await existingPdfDoc.copyPages(newPdfDoc, [0]);
-                      existingPdfDoc.insertPage(0, copiedPage);
-                      const mergedBytes = await existingPdfDoc.save();
-                      const mergedBase64 = arrayBufferToBase64(mergedBytes);
+                      const mergedBase64 = await mergeScorebookPdfBase64(res.existingPdfBase64, res.newPdfBase64);
 
                       fetch(apiUrl, {
                         method: 'POST',
@@ -8978,12 +8888,7 @@ function renderHoleView() {
                 green: '',
                 weather: '晴れ',
                 pars: new Array(18).fill(4),
-                players: [
-                  { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) },
-                  { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) },
-                  { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) },
-                  { name: '', scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) }
-                ],
+                players: createDefaultPlayers(''),
                 nearpins: new Array(18).fill(''),
                 useGps: false,
                 memos: new Array(18).fill(''),
@@ -9140,14 +9045,7 @@ function renderHoleView() {
                 if (typeof PDFLib === 'undefined') {
                   throw new Error('PDF結合ライブラリが読み込まれていません');
                 }
-                const existingBytes = base64ToArrayBuffer(res.existingPdfBase64);
-                const newBytes = base64ToArrayBuffer(res.newPdfBase64);
-                const existingPdfDoc = await PDFLib.PDFDocument.load(existingBytes);
-                const newPdfDoc = await PDFLib.PDFDocument.load(newBytes);
-                const [copiedPage] = await existingPdfDoc.copyPages(newPdfDoc, [0]);
-                existingPdfDoc.insertPage(0, copiedPage);
-                const mergedBytes = await existingPdfDoc.save();
-                const mergedBase64 = arrayBufferToBase64(mergedBytes);
+                const mergedBase64 = await mergeScorebookPdfBase64(res.existingPdfBase64, res.newPdfBase64);
 
                 google.script.run
                   .withSuccessHandler(saveRes => {
@@ -9206,14 +9104,7 @@ function renderHoleView() {
 
           if (res.needsMerge && typeof PDFLib !== 'undefined') {
             try {
-              const existingBytes = base64ToArrayBuffer(res.existingPdfBase64);
-              const newBytes = base64ToArrayBuffer(res.newPdfBase64);
-              const existingPdfDoc = await PDFLib.PDFDocument.load(existingBytes);
-              const newPdfDoc = await PDFLib.PDFDocument.load(newBytes);
-              const [copiedPage] = await existingPdfDoc.copyPages(newPdfDoc, [0]);
-              existingPdfDoc.insertPage(0, copiedPage);
-              const mergedBytes = await existingPdfDoc.save();
-              const mergedBase64 = arrayBufferToBase64(mergedBytes);
+              const mergedBase64 = await mergeScorebookPdfBase64(res.existingPdfBase64, res.newPdfBase64);
 
               fetch(apiUrl, {
                 method: 'POST',
@@ -9718,40 +9609,14 @@ function renderHoleView() {
       { key: '古屋', defaultName: '古屋' },
       { key: '松村', defaultName: '松村' }
     ];
-    const FOUR_MEMBERS = DEFAULT_SHARE_MEMBERS; // 互換性維持
 
     let isAnalyticsShareMode = false;
     let initialAnalyticsPlayerParam = '';
     let currentAllowedShareMembers = []; // URLパラメータで指定された相互共有メンバー一覧
 
-    // =================================================================
-    // 🔒 オーナーPINコード認証 (0628) & 本体保護 (v2.6.0)
-    // =================================================================
-    const ADMIN_PIN = "0628";
-    let enteredPin = "";
-
-    function isAdminAuthenticated() {
-      return true; // 🔐 パスコード認証完全廃止（常時認証済み扱い）
-    }
-
     function checkAdminAuthOnStartup() {
       // 🔐 パスコード画面を完全スキップし、0秒でメインUIを完全アンロック
       unlockMainAppUI();
-    }
-
-    function lockMainAppUI() {
-      try {
-        const accH = document.getElementById('accHeader');
-        if (accH) accH.style.display = 'none';
-        const accB = document.getElementById('accBody');
-        if (accB) accB.style.display = 'none';
-        const hdr = document.querySelector('header');
-        if (hdr) hdr.style.display = 'none';
-        const scWrap = document.querySelector('.score-table-wrap');
-        if (scWrap) scWrap.style.display = 'none';
-        const actSec = document.querySelector('.action-section');
-        if (actSec) actSec.style.display = 'none';
-      } catch (e) {}
     }
 
     function unlockMainAppUI() {
@@ -9767,97 +9632,6 @@ function renderHoleView() {
         const actSec = document.querySelector('.action-section');
         if (actSec) actSec.style.display = '';
       } catch (e) {}
-    }
-
-    function openAdminPinModal() {
-      enteredPin = "";
-      updatePinDotsUI();
-      const err = document.getElementById('pinErrorMsg');
-      if (err) err.textContent = "";
-      const modal = document.getElementById('modalAdminPin');
-      if (modal) modal.classList.add('open');
-    }
-
-    function closeAdminPinModal() {
-      const modal = document.getElementById('modalAdminPin');
-      if (modal) modal.classList.remove('open');
-    }
-
-    function pressPinKey(digit) {
-      if (enteredPin.length >= 4) return;
-      enteredPin += digit;
-      updatePinDotsUI();
-      if (typeof triggerHaptic === 'function') triggerHaptic('light');
-
-      if (enteredPin.length === 4) {
-        setTimeout(verifyEnteredPin, 100);
-      }
-    }
-
-    function clearPinKey() {
-      enteredPin = "";
-      updatePinDotsUI();
-      const err = document.getElementById('pinErrorMsg');
-      if (err) err.textContent = "";
-      if (typeof triggerHaptic === 'function') triggerHaptic('light');
-    }
-
-    function backspacePinKey() {
-      if (enteredPin.length > 0) {
-        enteredPin = enteredPin.slice(0, -1);
-        updatePinDotsUI();
-        const err = document.getElementById('pinErrorMsg');
-        if (err) err.textContent = "";
-        if (typeof triggerHaptic === 'function') triggerHaptic('light');
-      }
-    }
-
-    function updatePinDotsUI() {
-      for (let i = 0; i < 4; i++) {
-        const dot = document.getElementById(`pinDot${i}`);
-        if (dot) {
-          if (i < enteredPin.length) {
-            dot.style.background = "#2b8a3e";
-            dot.style.borderColor = "#2b8a3e";
-            dot.style.transform = "scale(1.15)";
-          } else {
-            dot.style.background = "#fff";
-            dot.style.borderColor = "#ced4da";
-            dot.style.transform = "scale(1.0)";
-          }
-        }
-      }
-    }
-
-    function verifyEnteredPin() {
-      if (enteredPin === ADMIN_PIN) {
-        safeStorage.setItem('MyScore_v1_AdminPin', ADMIN_PIN);
-        safeStorage.setItem('MyScore_v1_UserIdentity', '桑木');
-        closeAdminPinModal();
-        unlockMainAppUI();
-        if (typeof triggerHaptic === 'function') triggerHaptic('success');
-        showToast('🔓 オーナー認証完了 (ScoreRec)');
-        sendAccessLog('オーナーログイン', '桑木', 'PIN認証成功 (0628)');
-      } else {
-        if (typeof triggerHaptic === 'function') triggerHaptic('error');
-        const err = document.getElementById('pinErrorMsg');
-        if (err) err.textContent = "⚠️ 暗証番号が違います";
-        enteredPin = "";
-        setTimeout(updatePinDotsUI, 300);
-      }
-    }
-
-    function switchToAnalyticsFromPin() {
-      closeAdminPinModal();
-      activateShareMode('桑木');
-    }
-
-    function logoutAdminPin() {
-      safeStorage.removeItem('MyScore_v1_AdminPin');
-      showToast('🔒 ログアウトしました（PINロック適用）');
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
     }
 
     // =================================================================
@@ -10035,9 +9809,6 @@ function renderHoleView() {
 
     // 👥 MemberMaster全員の取得 (スプレッドシートのMemberMasterシートを唯一の正とする)
     function getCandidateShareMembers() {
-      // ダミー名（旧初期値サンプル）の除外リスト
-      const DUMMY_NAMES = new Set(['自分', 'メンバー名', '佐藤', '鈴木', '高橋', '田中', '渡辺']);
-
       // 1. スプレッドシート同期済みの masterData.members または キャッシュから取得
       let rawMembers = [];
       if (typeof masterData !== 'undefined' && masterData && Array.isArray(masterData.members) && masterData.members.length > 0) {
@@ -10054,30 +9825,20 @@ function renderHoleView() {
         } catch (e) {}
       }
 
-      const nameSet = new Set();
-      if (rawMembers && rawMembers.length > 0) {
-        rawMembers.forEach(m => {
-          const raw = (typeof m === 'object' && m !== null) ? (m.name || m.playerName || '') : String(m || '');
-          let clean = raw.trim();
-          if (clean === '角陸信彦') clean = '角陸伸彦';
-          if (clean && !DUMMY_NAMES.has(clean)) {
-            nameSet.add(clean);
-          }
-        });
-      }
+      const nameSet = new Set(cleanMemberList(rawMembers));
 
       // ★ MemberMasterがまだ同期できていない極初期状態のみ、ScoreDB等から安全に補完
       if (nameSet.size === 0) {
         if (typeof analyticsDataCache !== 'undefined' && analyticsDataCache && Array.isArray(analyticsDataCache.availablePlayers)) {
           analyticsDataCache.availablePlayers.forEach(p => {
-            const clean = (p.name || '').trim();
-            if (clean && !DUMMY_NAMES.has(clean)) nameSet.add(clean);
+            const clean = normalizeMemberName(p);
+            if (clean) nameSet.add(clean);
           });
         }
         if (typeof state !== 'undefined' && state && Array.isArray(state.players)) {
           state.players.forEach(p => {
-            const pName = (p.name || '').trim();
-            if (pName && !DUMMY_NAMES.has(pName)) nameSet.add(pName);
+            const clean = normalizeMemberName(p);
+            if (clean) nameSet.add(clean);
           });
         }
       }
@@ -10085,12 +9846,10 @@ function renderHoleView() {
       // 👑 オーナー（桑木様）の重複（桑木・桑木修）を一本化
       const kuwakiEntries = Array.from(nameSet).filter(n => n.includes('桑木'));
       if (kuwakiEntries.length > 1) {
-        // '桑木' と '桑木修' の両方がある場合は MemberMaster登録名（桑木修）に一本化
         kuwakiEntries.forEach(n => nameSet.delete(n));
-        const preferred = kuwakiEntries.find(n => n === '桑木修' || n === '桑木 修') || kuwakiEntries[0];
+        const preferred = kuwakiEntries.find(n => n === '桑木修') || kuwakiEntries[0];
         nameSet.add(preferred);
       } else if (kuwakiEntries.length === 0) {
-        // 極初期状態で未検出の場合のみ追加
         nameSet.add('桑木修');
       }
 
@@ -10462,75 +10221,6 @@ function renderHoleView() {
       }
     }
 
-    function renderDemoAnalytics() {
-      if (!analyticsDataCache) {
-          // デモ用サンプルデータ
-          const demoData = {
-            success: true,
-            targetPlayer: '桑木 修',
-            summary: {
-              totalRounds: 8,
-              bestScore: 84,
-              averageScore: 89.5,
-              averagePutts: 33.8,
-              lastScore: 86,
-              last5Average: 88.2,
-              totalTomodachiPoints: null,
-              tomodachiRoundsCount: 0
-            },
-            trend: {
-              labels: ['5/12', '5/26', '6/09', '6/23', '7/07', '8/18', '9/01', '9/15'],
-              scores: [94, 91, 88, 92, 85, 90, 84, 86],
-              putts: [36, 35, 33, 36, 32, 34, 31, 33],
-              tomodachiPoints: [null, null, null, null, null, null, null, null]
-            },
-            distribution: {
-              labels: ['バーディ以上', 'パー', 'ボギー', 'ダボ', 'トリプル以上'],
-              counts: [8, 48, 52, 24, 12],
-              percentages: [5.6, 33.3, 36.1, 16.7, 8.3]
-            },
-            parStats: {
-              par3: { avg: 3.42, count: 32, parOrBetterRate: 62.5 },
-              par4: { avg: 4.88, count: 80, parOrBetterRate: 41.3 },
-              par5: { avg: 5.62, count: 32, parOrBetterRate: 59.4 }
-            },
-            subStats: {
-              avgObPerRound: 1.1,
-              avgPenaltyPerRound: 0.8,
-              avg3PuttsPerRound: 2.3,
-              outAvgScore: 44.1,
-              inAvgScore: 45.4
-            },
-            tomodachiDetail: {
-              hasData: false,
-              validRounds: 0,
-              validHoles: 0,
-              winRate: 0,
-              winHoles: 0,
-              loseHoles: 0,
-              drawHoles: 0,
-              nearpinHasData: false,
-              nearpinWins: 0,
-              nearpinCount: 0,
-              nearpinRate: 0
-            },
-            courseStats: [
-              { courseName: '成田ゴルフ倶楽部', roundCount: 3, avgScore: 88.3, bestScore: 86, avgPutts: 33.3 },
-              { courseName: 'カメリアヒルズCC', roundCount: 2, avgScore: 86.5, bestScore: 84, avgPutts: 32.0 },
-              { courseName: '袖ヶ浦CC', roundCount: 2, avgScore: 91.0, bestScore: 90, avgPutts: 35.0 },
-              { courseName: '総武CC', roundCount: 1, avgScore: 85.0, bestScore: 85, avgPutts: 32.0 }
-            ],
-            recentRounds: [
-              { date: '24/09/15', courseName: '成田ゴルフ倶楽部', gross: 86, putts: 33, tomodachiPoints: null },
-              { date: '24/09/01', courseName: 'カメリアヒルズCC', gross: 84, putts: 31, tomodachiPoints: null },
-              { date: '24/08/18', courseName: '袖ヶ浦CC', gross: 90, putts: 34, tomodachiPoints: null },
-              { date: '24/07/07', courseName: '総武CC', gross: 85, putts: 32, tomodachiPoints: null }
-            ]
-          };
-          renderAnalyticsUI(demoData);
-        }
-      }
-
     /**
      * ⛳️ 厳格な18H完走判定（ハーフラウンド完全除外）
      * - 有効スコア数15以上（scores.filter(s => typeof s === 'number' && s > 0).length >= 15）
@@ -10569,6 +10259,23 @@ function renderHoleView() {
         console.warn(err);
         return false;
       }
+    }
+
+    function apply18HKpiSummary(sm, rounds) {
+      const valid18HRounds = (rounds || []).filter(isFull18HRound);
+      const fullScores = valid18HRounds.map(r => Number(r.gross) || 0);
+      const fullPutts = valid18HRounds.map(r => Number(r.putts) || 0).filter(p => p > 0);
+      if (fullScores.length > 0) {
+        sm.bestScore = Math.min(...fullScores);
+        sm.averageScore = Math.round((fullScores.reduce((a, b) => a + b, 0) / fullScores.length) * 10) / 10;
+        if (fullScores.length >= 5) {
+          sm.last5Average = Math.round((fullScores.slice(0, 5).reduce((a, b) => a + b, 0) / 5) * 10) / 10;
+        }
+      }
+      if (fullPutts.length > 0) {
+        sm.averagePutts = Math.round((fullPutts.reduce((a, b) => a + b, 0) / fullPutts.length) * 10) / 10;
+      }
+      return { valid18HRounds, fullScores, fullPutts };
     }
 
     function renderAnalyticsUI(data) {
@@ -10673,20 +10380,7 @@ function renderHoleView() {
 
       const sm = data.summary || {};
       const allRoundsList = (data.allRounds && data.allRounds.length > 0) ? data.allRounds : (data.recentRounds || []);
-      const valid18HRounds = allRoundsList.filter(isFull18HRound); // ⛳️ 厳格な18H完走のみ (ハーフラウンド除外)
-      const fullScores = valid18HRounds.map(r => Number(r.gross) || 0);
-      const fullPutts = valid18HRounds.map(r => Number(r.putts) || 0).filter(p => p > 0);
-
-      if (fullScores.length > 0) {
-        sm.bestScore = Math.min(...fullScores);
-        sm.averageScore = Math.round((fullScores.reduce((a, b) => a + b, 0) / fullScores.length) * 10) / 10;
-        if (fullScores.length >= 5) {
-          sm.last5Average = Math.round((fullScores.slice(0, 5).reduce((a, b) => a + b, 0) / 5) * 10) / 10;
-        }
-      }
-      if (fullPutts.length > 0) {
-        sm.averagePutts = Math.round((fullPutts.reduce((a, b) => a + b, 0) / fullPutts.length) * 10) / 10;
-      }
+      const { valid18HRounds, fullScores } = apply18HKpiSummary(sm, allRoundsList);
 
       document.getElementById('kpiAvgScore').textContent = sm.averageScore > 0 ? sm.averageScore : '-';
       
@@ -11026,19 +10720,7 @@ function renderHoleView() {
 
       // 4. 上部KPIリボンの更新
       const sm = data.summary || {};
-      const validCockpit18HRounds = rounds.filter(isFull18HRound); // ⛳️ 厳格な18H完走のみ (ハーフラウンド除外)
-      const cockpitScores = validCockpit18HRounds.map(r => Number(r.gross) || 0);
-      const cockpitPutts = validCockpit18HRounds.map(r => Number(r.putts) || 0).filter(p => p > 0);
-      if (cockpitScores.length > 0) {
-        sm.bestScore = Math.min(...cockpitScores);
-        sm.averageScore = Math.round((cockpitScores.reduce((a, b) => a + b, 0) / cockpitScores.length) * 10) / 10;
-        if (cockpitScores.length >= 5) {
-          sm.last5Average = Math.round((cockpitScores.slice(0, 5).reduce((a, b) => a + b, 0) / 5) * 10) / 10;
-        }
-      }
-      if (cockpitPutts.length > 0) {
-        sm.averagePutts = Math.round((cockpitPutts.reduce((a, b) => a + b, 0) / cockpitPutts.length) * 10) / 10;
-      }
+      apply18HKpiSummary(sm, rounds);
 
       const avgScoreEl = document.getElementById('ckpiAvgScore');
       if (avgScoreEl) avgScoreEl.textContent = sm.averageScore > 0 ? sm.averageScore : '-';
@@ -11758,10 +11440,6 @@ function renderHoleView() {
         msg += `\n📝 過去のプレーメモ (${d.memos.length}件):\n` + d.memos.slice(-5).map(m => `・${m}`).join('\n');
       }
       alert(msg);
-    }
-
-    function openCockpitHoleDetail(holeNum, par, avgScore, diffStr, avgPutts, sampleCount) {
-      alert(`【H${holeNum} 攻略カルテ詳細】\nPar ${par} / 平均スコア: ${avgScore}打 (${diffStr})\n平均パット: ${avgPutts} (サンプル数: ${sampleCount}ラウンド)\n\n※各ホールの打数推移や過去の振り返りメモがここに集計されます。`);
     }
 
     // -----------------------------------------------------------------
@@ -14127,61 +13805,8 @@ function renderHoleView() {
       }
     }
 
-    function removeActiveClubSequenceShot() {
-      if (typeof triggerHaptic === 'function') triggerHaptic('medium');
-      const hIdx = currentClubSeqHole;
-      if (!state.clubSequences[hIdx]) return;
-      const seq = state.clubSequences[hIdx];
-      if (activeSeqShotIndex >= 0 && activeSeqShotIndex < seq.length) {
-        try {
-          const removedShot = seq[activeSeqShotIndex];
-          if (removedShot && (removedShot.lat != null || removedShot.timestamp)) {
-            lastRemovedClubShotInfo = {
-              lat: removedShot.lat || null,
-              lng: removedShot.lng || null,
-              timestamp: removedShot.timestamp || Date.now(),
-              hIdx: hIdx,
-              removedAt: Date.now()
-            };
-          }
-        } catch (e) {
-          console.warn('Track removed shot error:', e);
-        }
-        seq.splice(activeSeqShotIndex, 1);
-        activeSeqShotIndex = seq.length > 0 ? (seq.length - 1) : -1;
-        renderClubSequenceUI();
-      }
-    }
-
-    function undoClubSequenceShot() {
-      if (typeof triggerHaptic === 'function') triggerHaptic('light');
-      const hIdx = currentClubSeqHole;
-      if (!state.clubSequences[hIdx]) return;
-      const seq = state.clubSequences[hIdx];
-      if (seq.length > 0) {
-        try {
-          const removedShot = seq[seq.length - 1];
-          if (removedShot && (removedShot.lat != null || removedShot.timestamp)) {
-            lastRemovedClubShotInfo = {
-              lat: removedShot.lat || null,
-              lng: removedShot.lng || null,
-              timestamp: removedShot.timestamp || Date.now(),
-              hIdx: hIdx,
-              removedAt: Date.now()
-            };
-          }
-        } catch (e) {
-          console.warn('Track undo shot error:', e);
-        }
-        seq.pop();
-        activeSeqShotIndex = seq.length > 0 ? (seq.length - 1) : -1;
-        renderClubSequenceUI();
-        if (typeof saveLocalStorage === 'function') saveLocalStorage();
-      }
-    }
-
-    function removeClubSequenceShot(index) {
-      if (typeof triggerHaptic === 'function') triggerHaptic('light');
+    function removeClubSequenceShot(index, hapticType = 'light') {
+      if (typeof triggerHaptic === 'function') triggerHaptic(hapticType);
       const hIdx = currentClubSeqHole;
       if (!state.clubSequences[hIdx]) return;
       const seq = state.clubSequences[hIdx];
@@ -14204,6 +13829,17 @@ function renderHoleView() {
         activeSeqShotIndex = seq.length > 0 ? (seq.length - 1) : -1;
         renderClubSequenceUI();
         if (typeof saveLocalStorage === 'function') saveLocalStorage();
+      }
+    }
+
+    function removeActiveClubSequenceShot() {
+      removeClubSequenceShot(activeSeqShotIndex, 'medium');
+    }
+
+    function undoClubSequenceShot() {
+      const seq = state.clubSequences[currentClubSeqHole];
+      if (seq && seq.length > 0) {
+        removeClubSequenceShot(seq.length - 1, 'light');
       }
     }
 
@@ -14645,7 +14281,6 @@ function renderHoleView() {
       shareAnalyticsDashboardUrl, openShareMembersModal, closeShareMembersModal, toggleAllShareMembers,
       filterShareMembersList, executeShareSelectedMembers, executeShareViaApp,
       selectUserIdentity, openAccessLogsModal, closeAccessLogsModal, fetchAndRenderAccessLogs,
-      pressPinKey, clearPinKey, backspacePinKey, switchToAnalyticsFromPin, logoutAdminPin,
       openHoleStrategyModal, closeHoleStrategyModal, openScorebookPdf, filterCourseSelectOptions
     };
     for (const [name, fn] of Object.entries(globalActions)) {
@@ -14686,23 +14321,7 @@ function renderHoleView() {
 
         // 🛡️ キャッシュ内の旧ダミー名（佐藤、鈴木、高橋、田中、渡辺等）を完全パージ ＆ 桑木様の重複解消
         if (masterData && Array.isArray(masterData.members)) {
-          const DUMMY_NAMES = new Set(['自分', 'メンバー名', '佐藤', '鈴木', '高橋', '田中', '渡辺']);
-          const filtered = masterData.members.filter(m => {
-            const raw = (typeof m === 'object' && m !== null) ? (m.name || '') : String(m || '');
-            return raw && !DUMMY_NAMES.has(raw.trim());
-          });
-          const hasFullKuwaki = filtered.some(m => {
-            const raw = (typeof m === 'object' && m !== null) ? (m.name || '') : String(m || '');
-            return raw.trim() === '桑木修' || raw.trim() === '桑木 修';
-          });
-          if (hasFullKuwaki) {
-            masterData.members = filtered.filter(m => {
-              const raw = (typeof m === 'object' && m !== null) ? (m.name || '') : String(m || '');
-              return raw.trim() !== '桑木'; // 略称側を除外
-            });
-          } else {
-            masterData.members = filtered;
-          }
+          masterData.members = cleanMemberList(masterData.members);
         }
 
         // もしメンバーがまだ取得できていなければ、または全コースマスター(3,000件超)・緯度経度情報が未キャッシュならバックグラウンドで最新マスターを同期
@@ -14714,33 +14333,8 @@ function renderHoleView() {
           }, 300);
         }
 
-        // 🛡️ 進行中ラウンドの復元チェック（1アクション毎の入力やキル耐性）
-        const hasSavedRound = (state.courseName && state.courseName.trim() !== '') ||
-                              (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
-
         // 🛡️ 本人（1人目: 桑木修）のみ初期設定、同伴者2〜4人目はデフォルト空欄
-        if (!state.players || !state.players[0] || !state.players[0].name || state.players[0].name.trim() === '') {
-          if (!state.players) state.players = [];
-          const defaultNames = ['桑木修', '', '', ''];
-          for (let i = 0; i < 4; i++) {
-            if (!state.players[i]) {
-              state.players[i] = { name: defaultNames[i], scores: new Array(18).fill(0), putts: new Array(18).fill(null), bunkers: new Array(18).fill(null), obs: new Array(18).fill(null), penalties: new Array(18).fill(null), tomodachiPoints: new Array(18).fill(0) };
-            } else if (!state.players[i].name) {
-              state.players[i].name = defaultNames[i];
-            }
-          }
-        }
-
-        // ★【キル再起動耐性】コース一覧DOM生成後に保護データを最終再適用
-        try {
-          const protSaved = safeStorage.getItem('golf_protected_backup');
-          if (protSaved) {
-            const protObj = JSON.parse(protSaved);
-            if (isValidOngoingRound(protObj)) {
-              Object.assign(state, protObj);
-            }
-          }
-        } catch (e) {}
+        ensureValidPlayersState('桑木修');
 
         renderMasterOptions(false);
 
@@ -14794,8 +14388,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.48 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.48 起動完了');
+            console.log('[ScoreRec] v1.0.49 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.49 起動完了');
           }
         }, 400);
       });
@@ -14803,8 +14397,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.48 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.48 起動完了');
+          console.log('[ScoreRec] v1.0.49 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.49 起動完了');
         }
       }, 400);
     }
