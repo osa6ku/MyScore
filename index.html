@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.50</title>
+  <title>マイスコア v1.0.51</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.50</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.51</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -9516,13 +9516,15 @@ function renderHoleView() {
       const totalBadgeEl = document.getElementById('statsTotalShotsBadge');
       if (totalBadgeEl) totalBadgeEl.textContent = `総記録数: ${grandTotalShots} 打`;
 
-      const sortedClubs = Object.keys(clubStatsMap).sort((a, b) => {
-        const idxA = DEFAULT_ORDER.indexOf(a);
-        const idxB = DEFAULT_ORDER.indexOf(b);
+      // 入力画面マスター（SHOT_CLUBS）の番手・飛距離順と完全同期（1W → 5W → H5 → 6I...）
+      const clubSortMaster = (typeof SHOT_CLUBS !== 'undefined' && Array.isArray(SHOT_CLUBS)) ? SHOT_CLUBS : DEFAULT_ORDER;
+      const sortedClubs = Object.keys(clubStatsMap).filter(c => clubStatsMap[c].totalCount >= 1).sort((a, b) => {
+        const idxA = clubSortMaster.indexOf(a);
+        const idxB = clubSortMaster.indexOf(b);
         if (idxA !== -1 && idxB !== -1) return idxA - idxB;
         if (idxA !== -1) return -1;
         if (idxB !== -1) return 1;
-        return clubStatsMap[b].totalCount - clubStatsMap[a].totalCount;
+        return a.localeCompare(b);
       });
 
       if (sortedClubs.length === 0) {
@@ -14864,8 +14866,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.50 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.50 起動完了');
+            console.log('[ScoreRec] v1.0.51 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.51 起動完了');
           }
         }, 400);
       });
@@ -14873,8 +14875,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.50 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.50 起動完了');
+          console.log('[ScoreRec] v1.0.51 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.51 起動完了');
         }
       }, 400);
     }
