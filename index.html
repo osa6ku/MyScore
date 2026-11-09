@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.52</title>
+  <title>マイスコア v1.0.53</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.52</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.53</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -9472,7 +9472,7 @@ function renderHoleView() {
         if (Array.isArray(rawMemos)) {
           rawMemos.forEach((t, i) => {
             const str = String(t || '').trim();
-            const match = str.match(/^H(\\d+)\\s*[:：]\\s*(.*)$/i);
+            const match = str.match(/^H(\d+)\s*[:：]\s*(.*)$/i);
             if (match) {
               const hNum = parseInt(match[1], 10);
               if (hNum >= 1 && hNum <= 18) res[hNum - 1] = match[2].trim();
@@ -9484,7 +9484,7 @@ function renderHoleView() {
         }
         const tokens = String(rawMemos).split('/').map(t => t.trim()).filter(Boolean);
         tokens.forEach((t, i) => {
-          const match = t.match(/^H(\\d+)\\s*[:：]\\s*(.*)$/i);
+          const match = t.match(/^H(\d+)\s*[:：]\s*(.*)$/i);
           if (match) {
             const hNum = parseInt(match[1], 10);
             if (hNum >= 1 && hNum <= 18) res[hNum - 1] = match[2].trim();
@@ -14905,8 +14905,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.52 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.52 起動完了');
+            console.log('[ScoreRec] v1.0.53 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.53 起動完了');
           }
         }, 400);
       });
@@ -14914,8 +14914,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.52 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.52 起動完了');
+          console.log('[ScoreRec] v1.0.53 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.53 起動完了');
         }
       }, 400);
     }
