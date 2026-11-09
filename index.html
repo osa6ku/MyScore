@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.51</title>
+  <title>マイスコア v1.0.52</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.51</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.52</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -3476,7 +3476,7 @@
           res = match[2];
         }
         const isBunker = club.includes('🏖️') || club === 'バンカー' || club === '砂';
-        const cleanClub = club.replace('🏖️', '').trim();
+        let cleanClub = club.replace('🏖️', '').trim();
         if (cleanClub === 'バンカー' || cleanClub === '砂' || cleanClub === '') {
           return {
             type: 'bunker',
@@ -3488,6 +3488,9 @@
           };
         }
         const type = (cleanClub === 'プレ4') ? 'pre4' : (cleanClub === 'OB' ? 'ob' : (cleanClub === 'ペナ' ? 'penalty' : 'club'));
+        if (type === 'club') {
+          cleanClub = (typeof normalizeClubName === 'function') ? normalizeClubName(cleanClub) : cleanClub;
+        }
         return {
           type: type,
           club: cleanClub,
@@ -3512,11 +3515,15 @@
         }
         const type = item.type || (club === 'プレ4' ? 'pre4' : (club === 'OB' ? 'ob' : (club === 'ペナ' ? 'penalty' : 'club')));
         const isBunker = !!item.isBunker;
-        let disp = item.display || club;
+        let normClub = club;
+        if (type === 'club') {
+          normClub = (typeof normalizeClubName === 'function') ? normalizeClubName(club) : club;
+        }
+        let disp = item.display || normClub;
         if (isBunker && !disp.includes('🏖️')) disp += ' 🏖️';
         return {
           type: type,
-          club: club,
+          club: normClub,
           res: res,
           isBunker: isBunker,
           penaltyHits: item.penaltyHits !== undefined ? item.penaltyHits : (type === 'pre4' ? 2 : (type === 'ob' || type === 'penalty' ? 1 : undefined)),
@@ -3527,8 +3534,45 @@
     }
     window.normalizeClubSequenceItem = normalizeClubSequenceItem;
 
-    // 🛰️ ショットトレーサー グローバル定数・状態 (TDZ防止のため先頭で定義)
-    var SHOT_CLUBS = window.SHOT_CLUBS = ['1W', '5W', 'H5', '6I', '7I', '8I', '9I', 'W', '50°', '54°', '58°', 'ChipR', 'PT'];
+    // 🏌️ クラブ標準マスター並び順（長い順・飛距離順）の厳格定義
+    var CLUB_SORT_MASTER = window.CLUB_SORT_MASTER = [
+      '1W', '3W', '5W', '7W',
+      '3H', '5H',
+      '4I', '5I', '6I', '7I', '8I', '9I',
+      'PW', 'AW', 'GW', 'SW', 'LW',
+      '48°', '50°', '52°', '54°', '56°', '58°', '60°',
+      'ChipR',
+      'PT'
+    ];
+
+    // クラブ名正規化ヘルパー（過去の表記ゆれを標準マスターへマッピング）
+    function normalizeClubName(clubStr) {
+      if (!clubStr) return '';
+      let c = String(clubStr).replace('🏖️', '').trim();
+      // 小文字アイアン表記 (5i, 6i, 7i, 8i, 9i)
+      c = c.replace(/^([4-9])i$/i, '$1I');
+      // 度数表記のゆれ (50 -> 50°)
+      if (/^(48|50|52|54|56|58|60)$/.test(c)) c = c + '°';
+      // 3番系ハイブリッド (3U, U3, 3H) -> 3H
+      if (c === '3U' || c === 'U3' || c === '3H') return '3H';
+      // 5番系ハイブリッド (5U, U5, H5, 5H) -> 5H
+      if (c === '5U' || c === 'U5' || c === 'H5' || c === '5H') return '5H';
+      // W -> PW
+      if (c === 'W') return 'PW';
+      return c;
+    }
+    window.normalizeClubName = normalizeClubName;
+
+    // クラブソート順ヘルパー（マスター配列のインデックス順、未知クラブは末尾）
+    function getClubSortIndex(c) {
+      const norm = normalizeClubName(c);
+      const idx = CLUB_SORT_MASTER.indexOf(norm);
+      return idx !== -1 ? idx : (CLUB_SORT_MASTER.indexOf(c) !== -1 ? CLUB_SORT_MASTER.indexOf(c) : 999);
+    }
+    window.getClubSortIndex = getClubSortIndex;
+
+    // 🛰️ ショット入力・パレット用クラブマスター（愛用厳格13本・3H/5H表記対応）
+    var SHOT_CLUBS = window.SHOT_CLUBS = ['1W', '5W', '3H', '5H', '6I', '7I', '8I', '9I', 'PW', '50°', '54°', '58°', 'ChipR', 'PT'];
     var shotLinesLayer = null;
     var currentShotTracerHole = 0; // 0 to 17
     var currentSelectedClub = '1W';
@@ -9470,7 +9514,7 @@ function renderHoleView() {
             if (item.type === 'bunker' || item.type === 'ob' || item.type === 'pre4' || item.type === 'penalty' || item.club === 'バンカー' || item.club === '砂' || item.club === '🏖️バンカー') return;
 
             grandTotalShots++;
-            const cKey = item.club;
+            const cKey = (typeof normalizeClubName === 'function') ? normalizeClubName(item.club) : item.club;
             if (!clubStatsMap[cKey]) {
               clubStatsMap[cKey] = {
                 club: cKey,
@@ -9516,14 +9560,11 @@ function renderHoleView() {
       const totalBadgeEl = document.getElementById('statsTotalShotsBadge');
       if (totalBadgeEl) totalBadgeEl.textContent = `総記録数: ${grandTotalShots} 打`;
 
-      // 入力画面マスター（SHOT_CLUBS）の番手・飛距離順と完全同期（1W → 5W → H5 → 6I...）
-      const clubSortMaster = (typeof SHOT_CLUBS !== 'undefined' && Array.isArray(SHOT_CLUBS)) ? SHOT_CLUBS : DEFAULT_ORDER;
+      // 🏌️ クラブ標準マスター（長い順）に完全統一
       const sortedClubs = Object.keys(clubStatsMap).filter(c => clubStatsMap[c].totalCount >= 1).sort((a, b) => {
-        const idxA = clubSortMaster.indexOf(a);
-        const idxB = clubSortMaster.indexOf(b);
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
+        const idxA = (typeof getClubSortIndex === 'function') ? getClubSortIndex(a) : 999;
+        const idxB = (typeof getClubSortIndex === 'function') ? getClubSortIndex(b) : 999;
+        if (idxA !== idxB) return idxA - idxB;
         return a.localeCompare(b);
       });
 
@@ -11254,7 +11295,7 @@ function renderHoleView() {
                 ? normalizeClubSequenceItem(rawItem)
                 : (rawItem && typeof rawItem === 'object' ? rawItem : { club: String(rawItem || ''), res: '' });
               if (!item || !item.club) return;
-              const cName = item.club;
+              const cName = (typeof normalizeClubName === 'function') ? normalizeClubName(item.club) : item.club;
 
               // パターやトラブルを除外
               if (cName !== 'PT' && cName !== 'パター' && !cName.includes('バンカー') && !cName.includes('OB')) {
@@ -11386,14 +11427,12 @@ function renderHoleView() {
 
       // 2. 番手別スコア期待値＆ミス回避率 テーブル生成
       if (stackContainer) {
-        const DEFAULT_ORDER = ['1W', '5W', 'H5', '6I', '7I', '8I', '9I', 'W', '50°', '54°', '58°', 'ChipR', 'PT'];
-        const clubKeys = Object.keys(clubHoleStats).sort((a, b) => {
-          const idxA = DEFAULT_ORDER.indexOf(a);
-          const idxB = DEFAULT_ORDER.indexOf(b);
-          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-          if (idxA !== -1) return -1;
-          if (idxB !== -1) return 1;
-          return clubHoleStats[b].holeCount - clubHoleStats[a].holeCount;
+        // 🏌️ クラブ標準マスター（長い順）に完全統一
+        const clubKeys = Object.keys(clubHoleStats).filter(c => clubHoleStats[c].holeCount >= 1).sort((a, b) => {
+          const idxA = (typeof getClubSortIndex === 'function') ? getClubSortIndex(a) : 999;
+          const idxB = (typeof getClubSortIndex === 'function') ? getClubSortIndex(b) : 999;
+          if (idxA !== idxB) return idxA - idxB;
+          return a.localeCompare(b);
         });
 
         if (clubKeys.length === 0) {
@@ -14866,8 +14905,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.51 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.51 起動完了');
+            console.log('[ScoreRec] v1.0.52 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.52 起動完了');
           }
         }, 400);
       });
@@ -14875,8 +14914,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.51 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.51 起動完了');
+          console.log('[ScoreRec] v1.0.52 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.52 起動完了');
         }
       }, 400);
     }
