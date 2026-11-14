@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.53</title>
+  <title>マイスコア v1.0.54</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.53</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.54</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -4331,21 +4331,9 @@
               masterData = res;
               persistMasterDataToStorage(res);
 
-              const hasLocalRound1 = (state.courseName && state.courseName.trim() !== '') ||
-                                     (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
-              if (!silentBackground && !hasLocalRound1) {
-                state.courseName = '';
-                state.frontHalf = '';
-                state.backHalf = '';
-                state.tee = '';
-                state.green = '';
-                state.players.forEach((p, idx) => { p.name = (idx === 0) ? '桑木修' : ''; });
-                renderMasterOptions(true);
-              } else {
-                renderMasterOptions(false);
-              }
+              // 🛡️ マスター同期完了時: 進行中ラウンド情報（コース・メンバー・スコア等）は絶対に上書き・リセットしない
+              renderMasterOptions(false);
               renderHoleView();
-              saveLocalStorage();
 
               updateSyncBtns('マスター同期済', true);
               const uniqueCourseCount = res.totalCourses || (res.courseCatalog ? res.courseCatalog.length : 0);
@@ -4377,21 +4365,9 @@
               masterData = res;
               persistMasterDataToStorage(res);
 
-              const hasLocalRound2 = (state.courseName && state.courseName.trim() !== '') ||
-                                     (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
-              if (!silentBackground && !hasLocalRound2) {
-                state.courseName = '';
-                state.frontHalf = '';
-                state.backHalf = '';
-                state.tee = '';
-                state.green = '';
-                state.players.forEach((p, idx) => { p.name = (idx === 0) ? '桑木修' : ''; });
-                renderMasterOptions(true);
-              } else {
-                renderMasterOptions(false);
-              }
+              // 🛡️ マスター同期完了時: 進行中ラウンド情報（コース・メンバー・スコア等）は絶対に上書き・リセットしない
+              renderMasterOptions(false);
               renderHoleView();
-              if (hasLocalRound2) saveLocalStorage();
 
               updateSyncBtns('WebAPI同期済', true);
               const uniqueCourseCount = res.totalCourses || (res.courseCatalog ? res.courseCatalog.length : 0);
@@ -4413,21 +4389,9 @@
           masterData = ensureMasterCoursesExpanded(JSON.parse(JSON.stringify(defaultMasterData)));
           persistMasterDataToStorage(masterData);
 
-          const hasLocalRoundLocal = (state.courseName && state.courseName.trim() !== '') ||
-                                     (state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0));
-          if (!hasLocalRoundLocal) {
-            state.courseName = '';
-            state.frontHalf = '';
-            state.backHalf = '';
-            state.tee = '';
-            state.green = '';
-            state.players.forEach((p, idx) => { p.name = (idx === 0) ? '桑木修' : ''; });
-            renderMasterOptions(true);
-          } else {
-            renderMasterOptions(false);
-          }
+          // 🛡️ マスター同期完了時: 進行中ラウンド情報（コース・メンバー・スコア等）は絶対に上書き・リセットしない
+          renderMasterOptions(false);
           renderHoleView();
-          if (hasLocalRoundLocal) saveLocalStorage();
 
           updateSyncBtns('同期済 (ローカル)', true);
           const cCount = masterData.courseCatalog ? masterData.courseCatalog.length : 0;
@@ -4907,6 +4871,7 @@
       }
 
       saveLocalStorage();
+      if (typeof debouncedDraftSave === 'function') debouncedDraftSave(500);
       renderHoleView();
     }
 
@@ -5702,6 +5667,7 @@ function renderHoleView() {
 
       renderHoleView();
       if (typeof saveLocalStorage === 'function') saveLocalStorage();
+      if (typeof debouncedDraftSave === 'function') debouncedDraftSave(1000);
       advanceToNextInputTarget(pIdx);
     }
 
@@ -5720,6 +5686,7 @@ function renderHoleView() {
 
       renderHoleView();
       if (typeof saveLocalStorage === 'function') saveLocalStorage();
+      if (typeof debouncedDraftSave === 'function') debouncedDraftSave(1000);
       advanceToNextInputTarget(pIdx);
     }
 
@@ -5729,6 +5696,7 @@ function renderHoleView() {
       state.players[0].putts[hIdx] = val;
       renderHoleView();
       if (typeof saveLocalStorage === 'function') saveLocalStorage();
+      if (typeof debouncedDraftSave === 'function') debouncedDraftSave(1000);
       advanceToNextInputTarget(0);
     }
 
@@ -5743,6 +5711,7 @@ function renderHoleView() {
       }
       renderHoleView();
       if (typeof saveLocalStorage === 'function') saveLocalStorage();
+      if (typeof debouncedDraftSave === 'function') debouncedDraftSave(1000);
       advanceToNextInputTarget(0);
     }
 
@@ -5754,6 +5723,7 @@ function renderHoleView() {
       state.players[0][type][hIdx] = next;
       renderHoleView();
       if (typeof saveLocalStorage === 'function') saveLocalStorage();
+      if (typeof debouncedDraftSave === 'function') debouncedDraftSave(1000);
     }
 
     function changeScore(pIdx, hIdx, delta) {
@@ -5776,6 +5746,7 @@ function renderHoleView() {
 
       renderHoleView();
       if (typeof saveLocalStorage === 'function') saveLocalStorage();
+      if (typeof debouncedDraftSave === 'function') debouncedDraftSave(1000);
     }
 
     function changeSubStat(type, hIdx, delta) {
@@ -5793,6 +5764,7 @@ function renderHoleView() {
       state.players[0][type][hIdx] = next;
       renderHoleView();
       if (typeof saveLocalStorage === 'function') saveLocalStorage();
+      if (typeof debouncedDraftSave === 'function') debouncedDraftSave(1000);
     }
 
     function getGrossSum(pIdx, upToHIdx) {
@@ -5811,6 +5783,17 @@ function renderHoleView() {
     // ★【データ保全強化】ホール終了ごとの完全非同期バックグラウンド保存 ＆ 排他キュー制御
     var isSyncingToSheet = false;
     var hasPendingSheetSync = false;
+    var draftSaveTimeout = null;
+
+    function debouncedDraftSave(delay = 1000) {
+      if (draftSaveTimeout) clearTimeout(draftSaveTimeout);
+      draftSaveTimeout = setTimeout(() => {
+        if (typeof triggerDraftSave === 'function') {
+          triggerDraftSave();
+        }
+      }, delay);
+    }
+    window.debouncedDraftSave = debouncedDraftSave;
 
     function triggerDraftSave() {
       saveLocalStorage();
@@ -5849,7 +5832,7 @@ function renderHoleView() {
           if (apiUrl) {
             fetch(apiUrl, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
               body: JSON.stringify({ action: 'saveDraft', payload: payload })
             })
             .then(() => { onSyncFinish(); })
@@ -5950,22 +5933,71 @@ function renderHoleView() {
     // 🛡️ 進行中ラウンド有効データ検証ヘルパー（白紙データによる破壊上書き防止）
     function isValidOngoingRound(st) {
       if (!st) return false;
-      let hasScores = false;
-      let hasMembers = false;
+
+      // 1. 誰か1人でも1ホール以上のスコア（score > 0）があるか
       if (st.players && Array.isArray(st.players)) {
-        // メンバー名入力済み判定 (2人目以降に有効な名前があるか、または1人目本人が初期値以外で設定されているか)
-        hasMembers = st.players.slice(1).some(p => p && p.name && String(p.name).trim() !== '');
-        // 1ホール以上スコア入力済み判定 (参加者全員のスコアを確認)
         for (let i = 0; i < st.players.length; i++) {
           const p = st.players[i];
           if (p && Array.isArray(p.scores) && p.scores.some(s => Number(s) > 0)) {
-            hasScores = true;
-            break;
+            return true;
           }
         }
+        // 4. 同伴者（2〜4人目）の名前が1人以上設定されているか
+        const hasPartners = st.players.slice(1).some(p => p && p.name && String(p.name).trim() !== '');
+        if (hasPartners) return true;
       }
-      // 厳格バリデーション: メンバー名入力済み、または1ホール以上スコア入力済み
-      return hasScores || hasMembers;
+
+      // 2. clubSequences / shotLogs に1打以上の記録があるか
+      if (st.clubSequences && Array.isArray(st.clubSequences)) {
+        if (st.clubSequences.some(seq => Array.isArray(seq) && seq.length > 0)) return true;
+      }
+      if (st.shotLogs && Array.isArray(st.shotLogs)) {
+        if (st.shotLogs.some(shots => Array.isArray(shots) && shots.length > 0)) return true;
+      }
+
+      // 3. memos に1文字以上の入力があるか
+      if (st.memos && Array.isArray(st.memos)) {
+        if (st.memos.some(m => m && String(m).trim() !== '')) return true;
+      }
+
+      // 5. courseName が選択されており、かつ currentHole > 1 であるか
+      if (st.courseName && String(st.courseName).trim() !== '' && Number(st.currentHole) > 1) {
+        return true;
+      }
+
+      return false;
+    }
+
+    // 🛡️ 多重永続化（localStorage / sessionStorage / window.name）読み込みヘルパー
+    function getMultiStoredItem(key) {
+      // 1. safeStorage (localStorage / memory)
+      try {
+        const v = safeStorage.getItem(key);
+        if (v) return v;
+      } catch(e) {}
+
+      // 2. sessionStorage
+      try {
+        if (window.sessionStorage) {
+          const sv = sessionStorage.getItem(key);
+          if (sv) return sv;
+        }
+      } catch(e) {}
+
+      // 3. window.name
+      try {
+        if (window.name && window.name.startsWith('{')) {
+          const winObj = JSON.parse(window.name);
+          if (key === 'golf_protected_backup' || key === 'MyScore_v1_State' || key === 'golf_current_round_backup') {
+            if (winObj && winObj['golf_round_backup']) {
+              return winObj['golf_round_backup'];
+            }
+          }
+          if (winObj && winObj[key]) return winObj[key];
+        }
+      } catch(e) {}
+
+      return null;
     }
 
     function saveLocalStorage() {
@@ -5978,6 +6010,27 @@ function renderHoleView() {
         if (isValidOngoingRound(state)) {
           safeStorage.setItem('golf_protected_backup', dataStr);
         }
+
+        // 🛡️ iOS Safari iframe 揮発対策: sessionStorage および window.name にも多重永続化
+        try {
+          if (window.sessionStorage) {
+            sessionStorage.setItem('MyScore_v1_State', dataStr);
+            if (isValidOngoingRound(state)) {
+              sessionStorage.setItem('golf_protected_backup', dataStr);
+            }
+          }
+        } catch (ssErr) {}
+
+        try {
+          let winState = {};
+          try {
+            if (window.name && window.name.startsWith('{')) {
+              winState = JSON.parse(window.name);
+            }
+          } catch(e) {}
+          winState['golf_round_backup'] = dataStr;
+          window.name = JSON.stringify(winState);
+        } catch (wnErr) {}
       } catch (e) {
         console.warn('saveLocalStorage error:', e);
       }
@@ -5988,105 +6041,48 @@ function renderHoleView() {
       restoreCurrentRound();
     }
 
-    // ★【クラウド自動復旧】キャッシュ消失時の二段構え自動リカバリー
+    // ★【クラウド自動復旧】キャッシュ消失時の二段構え自動リカバリー（getLatestOngoingDraft参照＆正規化）
     function checkAndRecoverFromCloud() {
       try {
         // すでにローカルにスコア入力が存在する場合はローカル優先（上書き厳禁）
         const hasLocalScores = state.players && state.players[0] && Array.isArray(state.players[0].scores) && state.players[0].scores.some(s => Number(s) > 0);
         if (hasLocalScores) return;
 
-        const todayYYMMDD = (function() {
-          const jst = new Date(Date.now() + 9 * 3600 * 1000);
-          const y = String(jst.getFullYear()).slice(-2);
-          const m = ('0' + (jst.getMonth() + 1)).slice(-2);
-          const d = ('0' + jst.getDate()).slice(-2);
-          return `${y}/${m}/${d}`;
-        })();
+        const onDraftLoaded = (res) => {
+          if (!res || !res.success || !res.draft) return;
+          const draft = res.draft;
+          if (!isValidOngoingRound(draft)) return;
 
-        const onAnalyticsLoaded = (analytics) => {
-          if (!analytics || !Array.isArray(analytics.allRounds) || analytics.allRounds.length === 0) return;
-          const topRound = analytics.allRounds[0];
-          if (!topRound) return;
+          // 日付照合（本日または同日か、正規化して比較）
+          const todayJst = getTodayJstString(); // "YYYY/MM/DD"
+          const draftDate = String(draft.date || '').replace(/[\/\-]/g, '');
+          const todayDigits = todayJst.replace(/[\/\-]/g, '');
+          const isTodayDraft = draftDate.endsWith(todayDigits.slice(-4)) || draftDate === todayDigits || draftDate === todayDigits.slice(2);
 
-          // 本日日付かつ未完走（記録ホール数 1〜17）の判定
-          const isToday = (topRound.date === todayYYMMDD || topRound.date === todayYYMMDD.replace(/\//g, '-'));
-          const holeCnt = Number(topRound.scoredHolesCount) || 0;
-          const isUnfinished = (holeCnt >= 1 && holeCnt < 18);
-
-          if (isToday && isUnfinished) {
-            console.log('[Recovery] 本日の進行中ラウンドを検出。スプレッドシートから復旧します:', topRound);
-            
-            if (topRound.courseName) state.courseName = topRound.courseName;
-            if (topRound.courseId) state.courseId = topRound.courseId;
-            if (topRound.tee) state.tee = topRound.tee;
-            if (topRound.green) state.green = topRound.green;
-            if (topRound.weather) state.weather = topRound.weather;
-            if (topRound.roundId) state.roundId = topRound.roundId;
-
-            if (topRound.holes) {
-              if (Array.isArray(topRound.holes.pars)) state.pars = topRound.holes.pars;
-              if (Array.isArray(topRound.holes.yards)) state.yards = topRound.holes.yards;
-              if (Array.isArray(topRound.holes.hdcp)) state.hdcp = topRound.holes.hdcp;
-              
-              if (state.players && state.players[0]) {
-                if (Array.isArray(topRound.holes.scores)) state.players[0].scores = topRound.holes.scores;
-                if (Array.isArray(topRound.holes.putts)) state.players[0].putts = topRound.holes.putts;
-                if (Array.isArray(topRound.holes.ob)) state.players[0].obs = topRound.holes.ob;
-                if (Array.isArray(topRound.holes.pen)) state.players[0].penalties = topRound.holes.pen;
-                if (Array.isArray(topRound.holes.bunker)) state.players[0].bunkers = topRound.holes.bunker;
-              }
-              if (Array.isArray(topRound.holes.shots)) state.clubSequences = topRound.holes.shots;
-            }
-
-            // 同伴者スコア復元
-            if (Array.isArray(topRound.partners)) {
-              topRound.partners.forEach((pt, pIdx) => {
-                const targetIdx = pIdx + 1;
-                if (targetIdx < 4 && state.players[targetIdx]) {
-                  state.players[targetIdx].name = pt.name || '';
-                  if (Array.isArray(pt.scores)) state.players[targetIdx].scores = pt.scores;
-                  if (Array.isArray(pt.putts)) state.players[targetIdx].putts = pt.putts;
-                }
+          if (isTodayDraft) {
+            console.log('[Recovery] 本日の最新下書きを検出。クラウドから自動復旧します:', draft);
+            Object.assign(state, draft);
+            if (state.players && Array.isArray(state.players)) {
+              state.players.forEach(p => {
+                if (!p.bunkers || !Array.isArray(p.bunkers)) p.bunkers = new Array(18).fill(null);
               });
             }
-
-            // 次に入力すべきホールへ移動（記録済みホールの次、最大18）
-            let lastRecordedHole = 0;
-            if (state.players[0] && Array.isArray(state.players[0].scores)) {
-              for (let h = 0; h < 18; h++) {
-                if (state.players[0].scores[h] > 0) lastRecordedHole = h + 1;
-              }
-            }
-            state.currentHole = Math.min(18, lastRecordedHole + 1);
-
             saveLocalStorage();
             renderMasterOptions(false);
             renderHoleView();
-            showToast('☁️ 本日の進行中ラウンドデータをスプレッドシートから復旧しました');
+            showToast('☁️ 本日の進行中ラウンドデータをクラウドから復旧しました');
           }
         };
 
-        const cached = safeStorage.getItem('MyScore_v1_Analytics');
-        if (cached) {
-          try {
-            onAnalyticsLoaded(JSON.parse(cached));
-          } catch (e) {}
-        }
-
-        // バックグラウンドで最新データを取得して再判定
         const apiUrl = getEffectiveApiUrl();
         if (isGasEnv()) {
           google.script.run
-            .withSuccessHandler(res => {
-              if (res && res.success) onAnalyticsLoaded(res);
-            })
-            .getAnalyticsData('桑木', 'all', 'all');
+            .withSuccessHandler(res => { onDraftLoaded(res); })
+            .getLatestOngoingDraft();
         } else if (apiUrl) {
-          fetch(apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=getAnalyticsData&playerName=' + encodeURIComponent('桑木') + '&period=all&course=all')
+          fetch(apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=getLatestOngoingDraft')
             .then(r => r.json())
-            .then(res => {
-              if (res && res.success) onAnalyticsLoaded(res);
-            })
+            .then(res => { onDraftLoaded(res); })
             .catch(() => {});
         }
       } catch (err) {
@@ -6094,13 +6090,12 @@ function renderHoleView() {
       }
     }
 
-
-    // ★【手動復元】同一端末内の保護バックアップ（golf_protected_backup）から安全に呼び出す（案2: 厳格チェック）
+    // ★【手動復元】同一端末内の多重保護バックアップまたはクラウド最新下書きから安全に呼び出す
     function manualRestoreFromBackup() {
       let restoredObj = null;
 
       try {
-        const protSaved = safeStorage.getItem('golf_protected_backup');
+        const protSaved = getMultiStoredItem('golf_protected_backup');
         if (protSaved) {
           const parsed = JSON.parse(protSaved);
           if (isValidOngoingRound(parsed)) {
@@ -6114,7 +6109,7 @@ function renderHoleView() {
       // フォールバック: 通常キーや直前キーも検査
       if (!restoredObj) {
         try {
-          const curSaved = safeStorage.getItem('golf_current_round_backup') || safeStorage.getItem('MyScore_v1_State');
+          const curSaved = getMultiStoredItem('golf_current_round_backup') || getMultiStoredItem('MyScore_v1_State');
           if (curSaved) {
             const parsed = JSON.parse(curSaved);
             if (isValidOngoingRound(parsed)) {
@@ -6124,33 +6119,70 @@ function renderHoleView() {
         } catch (e) {}
       }
 
-      // 🚨 事前バリデーション: データが存在しない、または無効な場合（メンバー名未入力 かつ 全ホールスコアが0）
-      if (!restoredObj || !isValidOngoingRound(restoredObj)) {
-        showAppAlert('⚠️ この端末には保存されたバックアップデータがありません', 'バックアップ呼び出し');
+      const applyRestoredData = (targetObj, sourceLabel) => {
+        showAppConfirm(
+          sourceLabel + 'に保存されている入力データ（メンバー・スコア）を呼び出しますか？',
+          'バックアップの復元',
+          {
+            confirmText: '復元する',
+            cancelText: 'キャンセル',
+            onConfirm: () => {
+              try {
+                Object.assign(state, targetObj);
+                if (state.players && Array.isArray(state.players)) {
+                  state.players.forEach(p => {
+                    if (!p.bunkers || !Array.isArray(p.bunkers)) p.bunkers = new Array(18).fill(null);
+                  });
+                }
+                saveLocalStorage();
+                renderMasterOptions(false);
+                renderHoleView();
+                closeAccordion();
+                showToast('✅ ' + sourceLabel + 'からメンバー・スコアを復元しました');
+              } catch (err) {
+                showAppAlert('データ復元処理でエラーが発生しました: ' + err.message, '復元エラー');
+              }
+            }
+          }
+        );
+      };
+
+      // 1. ローカル多重ストレージに有効データが存在する場合
+      if (restoredObj && isValidOngoingRound(restoredObj)) {
+        applyRestoredData(restoredObj, 'この端末');
         return;
       }
 
-      // 有効なデータが存在する場合のみ確認モーダルを表示
-      showAppConfirm(
-        'この端末に保存されている入力データ（メンバー・スコア）を呼び出しますか？',
-        'バックアップの復元',
-        {
-          confirmText: '復元する',
-          cancelText: 'キャンセル',
-          onConfirm: () => {
-            try {
-              Object.assign(state, restoredObj);
-              saveLocalStorage();
-              renderMasterOptions(false);
-              renderHoleView();
-              closeAccordion();
-              showToast('✅ バックアップからメンバー・スコアを復元しました');
-            } catch (err) {
-              showAppAlert('データ復元処理でエラーが発生しました: ' + err.message, '復元エラー');
-            }
-          }
+      // 2. ローカルにない場合はサーバーから最新ドラフト取得を試行
+      showToast('☁️ クラウド最新バックアップを確認中...');
+      const onServerDraftRetrieved = (res) => {
+        if (res && res.success && res.draft && isValidOngoingRound(res.draft)) {
+          applyRestoredData(res.draft, 'クラウド(最新下書き)');
+        } else {
+          showAppAlert('⚠️ 保存されたバックアップデータが見つかりませんでした。\\n（端末・クラウドともに進行中の有効データがありません）', 'バックアップ呼び出し');
         }
-      );
+      };
+
+      if (isGasEnv()) {
+        google.script.run
+          .withSuccessHandler(res => onServerDraftRetrieved(res))
+          .withFailureHandler(err => {
+            showAppAlert('⚠️ バックアップの確認に失敗しました: ' + (err ? err.message : 'ネットワークエラー'), 'バックアップ呼び出し');
+          })
+          .getLatestOngoingDraft();
+      } else {
+        const apiUrl = getEffectiveApiUrl();
+        if (apiUrl) {
+          fetch(apiUrl + (apiUrl.includes('?') ? '&' : '?') + 'action=getLatestOngoingDraft')
+            .then(r => r.json())
+            .then(res => onServerDraftRetrieved(res))
+            .catch(err => {
+              showAppAlert('⚠️ バックアップの通信に失敗しました: ' + err.message, 'バックアップ呼び出し');
+            });
+        } else {
+          showAppAlert('⚠️ この端末には保存されたバックアップデータがありません', 'バックアップ呼び出し');
+        }
+      }
     }
     window.manualRestoreFromBackup = manualRestoreFromBackup;
 
@@ -6160,7 +6192,7 @@ function renderHoleView() {
 
       // 1. 最優先: 保護領域（golf_protected_backup）からの復元試行
       try {
-        const protSaved = safeStorage.getItem('golf_protected_backup');
+        const protSaved = getMultiStoredItem('golf_protected_backup');
         if (protSaved) {
           const p = JSON.parse(protSaved);
           if (isValidOngoingRound(p)) {
@@ -6176,7 +6208,7 @@ function renderHoleView() {
       // 2. 次点: 通常の保存キーからの復元試行
       if (!parsedObj) {
         try {
-          const saved = safeStorage.getItem('MyScore_v1_State');
+          const saved = getMultiStoredItem('MyScore_v1_State');
           if (saved) {
             const p = JSON.parse(saved);
             if (isValidOngoingRound(p)) {
@@ -6191,7 +6223,7 @@ function renderHoleView() {
       // 3. バックアップキーからの復元試行
       if (!parsedObj) {
         try {
-          const backupSaved = safeStorage.getItem('golf_current_round_backup');
+          const backupSaved = getMultiStoredItem('golf_current_round_backup');
           if (backupSaved) {
             const p = JSON.parse(backupSaved);
             if (isValidOngoingRound(p)) {
@@ -6213,18 +6245,7 @@ function renderHoleView() {
               if (!p.bunkers || !Array.isArray(p.bunkers)) {
                 p.bunkers = new Array(18).fill(null);
               }
-              // 🛡️ 初期状態・過去の自動パー挿入による誤判定（勝手なバーディ・PAR表示）を完全除去
-              if (p && Array.isArray(p.scores)) {
-                for (let h = 0; h < 18; h++) {
-                  if (p.scores[h] > 0 && (p.putts[h] === null || p.putts[h] === undefined)) {
-                    const hasClubSeq = state.clubSequences && state.clubSequences[h] && state.clubSequences[h].length > 0;
-                    const hasShots = state.shotLogs && state.shotLogs[h] && state.shotLogs[h].length > 0;
-                    if (!hasClubSeq && !hasShots) {
-                      p.scores[h] = 0;
-                    }
-                  }
-                }
-              }
+              // ★【最重要】一度入力されたスコアの自動消去（0化）は完全撤廃
             });
           }
           if (!state.players || !state.players[0] || !state.players[0].name) {
@@ -14611,6 +14632,7 @@ function renderHoleView() {
       }
 
       saveLocalStorage();
+      if (typeof debouncedDraftSave === 'function') debouncedDraftSave(500);
       renderHoleView();
       if (typeof updateHoleCompletionUI === 'function') {
         updateHoleCompletionUI();
@@ -14905,8 +14927,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.53 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.53 起動完了');
+            console.log('[ScoreRec] v1.0.54 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.54 起動完了');
           }
         }, 400);
       });
@@ -14914,8 +14936,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.53 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.53 起動完了');
+          console.log('[ScoreRec] v1.0.54 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.54 起動完了');
         }
       }, 400);
     }
