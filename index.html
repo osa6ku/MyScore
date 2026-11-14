@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.54</title>
+  <title>マイスコア v1.0.55</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -131,9 +131,6 @@
   </script>
   <!-- PDF結合ライブラリ (pdf-lib) スコアブック1ファイル化用 (非同期ロード) -->
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" crossorigin="anonymous" defer></script>
-  <!-- Leaflet 衛星マップ描画ライブラリ (ショットトレーサー用) (非同期ロード) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous" defer></script>
   <style>
     :root {
       --primary: #2d6a4f;
@@ -1849,7 +1846,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.54</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.55</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -1866,6 +1863,11 @@
   <div id="offlineSyncBanner" class="offline-sync-banner">
     <span>📡 未送信のラウンドデータがあります</span>
     <button type="button" id="btnSyncOfflineRound" onclick="syncPendingRound();" class="btn-offline-sync">今すぐ送信</button>
+  </div>
+
+  <!-- ⚠️ ストレージ容量警告バナー -->
+  <div id="storageQuotaWarningBanner" style="display:none; background:#ff6b6b; color:#fff; font-size:12px; font-weight:bold; padding:8px 12px; text-align:center; border-radius:4px; margin:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+    ⚠️ 端末ストレージ容量不足のため保存に失敗しました。不要なタブやブラウザデータを整理してください。
   </div>
 
   <div id="toastMessage" class="toast"></div>
@@ -2017,12 +2019,17 @@
       </div>
     </div>
 
-    <div class="setting-group" style="margin-top:4px;">
-      <label for="checkUseGps" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; color:#1b4332; user-select:none; -webkit-user-select:none; padding:4px 0; touch-action:manipulation;">
-        <input type="checkbox" id="checkUseGps" style="width:20px; height:20px; accent-color:#2b8a3e; cursor:pointer; flex-shrink:0; margin:0;">
-        <span style="font-size:12px; line-height:1.2;">🛰️ GPS現在地・ショット自動測位機能を利用する</span>
-      </label>
-      <div style="font-size:10px; color:#6c757d; margin-left:28px; line-height:1.2;">※OFF時はGPSリクエストを行わずバッテリーと通信を保護します（デフォルト: OFF）</div>
+    <!-- 💾 データ保全・バックアップステータス & 端末外書き出し -->
+    <div class="setting-group" style="margin-top:6px; background:#f1f3f5; border-radius:6px; padding:8px 10px; font-size:11px; border:1px solid #dee2e6;">
+      <div style="font-weight:bold; color:#1b4332; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+        <span>💾 データ保全ステータス</span>
+        <button type="button" onclick="exportCurrentRoundJsonFile()" style="background:#2b8a3e; color:#fff; border:none; border-radius:4px; padding:3px 8px; font-size:10.5px; font-weight:bold; cursor:pointer;">📤 スコアをファイル保存</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:2px; color:#495057; font-size:10px;">
+        <div>・ローカル保存: <span id="lblLocalSaveTime" style="font-weight:bold; color:#212529;">-</span></div>
+        <div>・クラウド下書き: <span id="lblCloudSaveTime" style="font-weight:bold; color:#212529;">-</span></div>
+        <div>・端末ストレージ使用量: <span id="lblStorageUsage" style="font-weight:bold; color:#212529;">-</span></div>
+      </div>
     </div>
     <!-- ラウンド設定画面 下部アクション群（3行構成: 1.打順決め / 2.外部Web API連携 / 3.ラウンド初期化） -->
     <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px; width:100%;">
@@ -2084,11 +2091,9 @@
   </div>
   <div class="hole-strategy-banner" id="holeStrategyBanner" style="display:none !important;"></div>
 
-  <!-- 📱 高速入力切替バー & 音声入力ボタン -->
+  <!-- 📱 高速入力切替バー -->
   <div class="fast-mode-bar">
-    <div style="display:flex; gap:6px;">
-      <button type="button" class="btn-voice-input" id="btnOpenShotTracer" onclick="openShotTracerModal(state.currentHole - 1);" style="display:none; background:linear-gradient(135deg, #2d6a4f, #1b4332);">🛰 軌跡マップ</button>
-    </div>
+    <div></div>
     <div class="mode-toggle-group">
       <span>入力モード:</span>
       <select id="selectInputMode" style="padding:3px 6px; font-size:0.75rem; border-radius:4px; border:1px solid #ced4da; background:#fff; font-weight:bold;">
@@ -3090,161 +3095,6 @@
     </div>
   </div>
 
-  <!-- 🛰️ GPS衛星ショット軌跡 & 一打記録 モーダル -->
-  <div class="modal-overlay" id="modalShotTracer">
-    <div class="modal-content modal-content-full" id="shotTracerModalContent" style="padding:12px; max-width:640px;">
-      
-      <!-- ヘッダー -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #e9ecef; padding-bottom:6px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:1.3rem;">🛰️</span>
-          <div>
-            <div style="font-weight:bold; font-size:0.95rem; color:#1b4332;" id="shotTracerHoleTitle">H1 (PAR4) ショット軌跡</div>
-            <div style="font-size:0.68rem; color:#6c757d;" id="shotTracerSubTitle">衛星写真マップ＆一打精密ログ</div>
-          </div>
-        </div>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <button class="btn-sync" id="btnShotPrevHole" style="background:#495057; padding:3px 8px; font-size:0.75rem;">◀ 前H</button>
-          <button class="btn-sync" id="btnShotNextHole" style="background:#495057; padding:3px 8px; font-size:0.75rem;">次H ▶</button>
-          <button class="btn-sync" id="btnCloseShotTracer" style="background:#868e96; padding:3px 8px; font-size:0.75rem;">✕ 閉じる</button>
-        </div>
-      </div>
-
-      <!-- 衛星写真マップ表示エリア -->
-      <div style="position:relative; width:100%; height:270px; border-radius:8px; overflow:hidden; border:1px solid #ced4da; margin-bottom:8px;">
-        <div id="shotMap" style="width:100%; height:100%; background:#2b2b2b;"></div>
-        <!-- マップ上オーバレイ情報バナー -->
-        <div style="position:absolute; top:6px; left:6px; z-index:1000; background:rgba(0,0,0,0.7); color:#fff; font-size:0.68rem; padding:3px 8px; border-radius:4px; pointer-events:none;">
-          🗺️ Esri高精細衛星写真 | タップで地点指定可能
-        </div>
-        <div style="position:absolute; bottom:6px; right:6px; z-index:1000;">
-          <button id="btnRecenterShotMap" style="background:#fff; border:1px solid #ced4da; border-radius:4px; padding:4px 8px; font-size:0.75rem; font-weight:bold; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.2);">
-            🎯 全体表示
-          </button>
-        </div>
-      </div>
-
-      <!-- 登録済みショットリスト -->
-      <div style="margin-bottom:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <span style="font-size:0.8rem; font-weight:bold; color:#495057;">📋 一打ごとの記録シーケンス:</span>
-          <button id="btnUndoShot" style="background:#fa5252; color:#fff; border:none; border-radius:4px; padding:2px 8px; font-size:0.7rem; font-weight:bold; cursor:pointer;">
-            ↩ 最後の1打を取消
-          </button>
-        </div>
-        <div id="shotSequenceList" style="display:flex; flex-direction:column; gap:4px; max-height:130px; overflow-y:auto; padding:2px;">
-          <!-- JSから動的にショットカードを注入 -->
-        </div>
-      </div>
-
-      <!-- 🚩 グリーン上（パット＆ホールアウト）専用パネル -->
-      <div id="greenModePanel" style="display:none; background:linear-gradient(135deg, #e6fcf5, #d3f9d8); border:1.5px solid #20c997; border-radius:8px; padding:10px; margin-bottom:8px; box-shadow:0 2px 8px rgba(32,201,151,0.25);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div style="font-weight:bold; font-size:0.88rem; color:#087f5b; display:flex; align-items:center; gap:6px;">
-            <span>🚩 グリーン上モード</span>
-            <span style="font-size:0.68rem; font-weight:normal; color:#495057; background:rgba(255,255,255,0.7); padding:1px 5px; border-radius:4px;">GPS不要・ワンタップ確定</span>
-          </div>
-          <button type="button" id="btnExitGreenMode" style="background:#fff; border:1px solid #ced4da; border-radius:4px; font-size:0.7rem; color:#495057; padding:2px 8px; cursor:pointer;">
-            ↩ 通常入力に戻る
-          </button>
-        </div>
-
-        <div style="font-size:0.72rem; color:#2b8a3e; font-weight:bold; margin-bottom:6px;">
-          パット数を選択してホールアウト（スコア確定）:
-        </div>
-
-        <!-- パット数選択ボタン群 -->
-        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:10px;">
-          <button type="button" class="putt-select-btn" data-putts="1">
-            1パット ⛳️
-          </button>
-          <button type="button" class="putt-select-btn active" data-putts="2">
-            2パット
-          </button>
-          <button type="button" class="putt-select-btn" data-putts="3">
-            3パット
-          </button>
-          <button type="button" class="putt-select-btn" data-putts="0" style="color:#d9480f; border-color:#ffa94d;">
-            0パット💥<br><span style="font-size:0.62rem;">(チップイン)</span>
-          </button>
-        </div>
-
-        <!-- ホールアウト＆スコア確定ボタン -->
-        <button type="button" id="btnFinishHoleGreen" style="width:100%; padding:11px; background:linear-gradient(135deg, #0ca678, #087f5b); color:#fff; border:none; border-radius:6px; font-size:0.92rem; font-weight:bold; cursor:pointer; box-shadow:0 3px 8px rgba(12, 166, 120, 0.4); display:flex; align-items:center; justify-content:center; gap:6px;">
-          🏁 <span id="greenHoleOutText">2パットでホールアウト＆スコア確定</span> ➔
-        </button>
-      </div>
-
-      <!-- 新規ショット登録パネル -->
-      <div id="regularShotInputPanel" style="background:#f1f3f5; border:1px solid #ced4da; border-radius:8px; padding:10px; margin-bottom:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <span style="font-size:0.85rem; font-weight:bold; color:#1b4332;" id="currentShotInputLabel">
-            📍 次の1打（第1打目）を記録:
-          </span>
-          <span style="font-size:0.75rem; font-weight:bold; color:#1971c2;" id="shotDistanceDisplay">
-            推定飛距離: - yd
-          </span>
-        </div>
-
-        <!-- 番手パレット -->
-        <div style="margin-bottom:6px;">
-          <div style="font-size:0.7rem; color:#6c757d; font-weight:bold; margin-bottom:3px;">1. 使用番手を選択:</div>
-          <div class="shot-club-grid" id="shotClubGrid"></div>
-        </div>
-
-        <!-- ライ・結果選択 -->
-        <div style="margin-bottom:6px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
-            <span style="font-size:0.7rem; color:#6c757d; font-weight:bold;">2. 落下地点 / ライ・結果を選択:</span>
-            <button type="button" id="btnEnterGreenModeDirect" style="background:#e6fcf5; color:#0ca678; border:1px solid #20c997; border-radius:4px; padding:2px 8px; font-size:0.7rem; font-weight:bold; cursor:pointer;">🚩 パット入力へ ➔</button>
-          </div>
-          <div class="shot-lie-grid" id="shotLieGrid">
-            <button type="button" class="lie-btn active" data-lie="Fairway">🟢 FW</button>
-            <button type="button" class="lie-btn" data-lie="Rough">🟡 ラフ</button>
-            <button type="button" class="lie-btn" data-lie="Bunker">🏖 バンカー</button>
-            <button type="button" class="lie-btn" data-lie="Green">🚩 グリーン</button>
-            <button type="button" class="lie-btn lie-ob" data-lie="OB">⚠️ OB</button>
-            <button type="button" class="lie-btn lie-pen" data-lie="Penalty">🟧 1ペナ</button>
-          </div>
-        </div>
-
-        <!-- OB時の打ち直しオプション（OB選択時に表示） -->
-        <div id="shotObOptions" style="display:none; background:#fff5f5; border:1px solid #ffc9c9; border-radius:6px; padding:8px; margin-bottom:6px;">
-          <div style="font-size:0.72rem; color:#c92a2a; font-weight:bold; margin-bottom:4px;">
-            ⚠️ OB / ペナルティの処理方法を選択:
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-            <button type="button" class="ob-opt-btn active" id="btnObPre4">
-              ⛳️ 前進特設ティ（プレ4）
-            </button>
-            <button type="button" class="ob-opt-btn" id="btnObRetee">
-              🔄 元の位置から打ち直し
-            </button>
-          </div>
-          <div style="font-size:0.65rem; color:#868e96; margin-top:4px;" id="obOptionDesc">
-            ※自動的にペナルティが加算され、次は「特設ティからの第4打」として記録されます。
-          </div>
-        </div>
-
-        <!-- GPS取得 & 登録アクション -->
-        <div style="display:flex; gap:6px;">
-          <button type="button" class="btn-action-sm" id="btnGetGpsLoc" style="background:#1971c2; flex:1; padding:8px 6px; font-size:0.8rem; font-weight:bold;">
-            📍 現在地GPS
-          </button>
-          <button type="button" class="btn-action-sm" id="btnAddShot" style="background:#2b8a3e; flex:1.5; padding:8px 6px; font-size:0.85rem; font-weight:bold;">
-            ➕ ショット登録
-          </button>
-        </div>
-      </div>
-
-      <!-- ホールスコア連動ボタン -->
-      <button class="btn-action-sm" id="btnSyncShotToHoleScore" style="background:linear-gradient(135deg, #1b4332, #2d6a4f); padding:10px; font-weight:bold; font-size:0.85rem; width:100%;">
-        ✅ このショット記録をスコア枠に反映する
-      </button>
-
-    </div>
-  </div>
-
   <!-- 🏌️‍♂️ 打順ショットカウンター ボトムシート モーダル -->
   <div class="bottom-sheet-overlay" id="modalClubSequenceSheet" onclick="if(event.target === this) closeClubSequenceModal();">
     <div class="bottom-sheet-content">
@@ -3365,16 +3215,38 @@
       getItem: function(key) {
         try {
           const ls = window['local' + 'Storage'];
-          if (ls) return ls.getItem(key);
+          if (ls) {
+            const v = ls.getItem(key);
+            if (v !== null && v !== undefined) return v;
+          }
         } catch (e) {}
         return this._mem[key] !== undefined ? this._mem[key] : null;
       },
       setItem: function(key, val) {
+        const strVal = String(val);
+        this._mem[key] = strVal;
         try {
           const ls = window['local' + 'Storage'];
-          if (ls) ls.setItem(key, String(val));
-        } catch (e) {}
-        this._mem[key] = String(val);
+          if (ls) {
+            try {
+              ls.setItem(key, strVal);
+              hideStorageQuotaWarning();
+            } catch (quotaErr) {
+              console.warn('[safeStorage] Quota exceeded. Purging MyScore_v1_Analytics...', quotaErr);
+              try {
+                ls.removeItem('MyScore_v1_Analytics');
+                ls.setItem(key, strVal);
+                hideStorageQuotaWarning();
+                console.log('[safeStorage] Successfully saved after purging MyScore_v1_Analytics.');
+              } catch (retryErr) {
+                console.error('[safeStorage] Storage quota critical failure:', retryErr);
+                showStorageQuotaWarning();
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[safeStorage] setItem error:', e);
+        }
       },
       removeItem: function(key) {
         try {
@@ -3391,6 +3263,15 @@
         this._mem = {};
       }
     };
+
+    function showStorageQuotaWarning() {
+      const banner = document.getElementById('storageQuotaWarningBanner');
+      if (banner) banner.style.display = 'block';
+    }
+    function hideStorageQuotaWarning() {
+      const banner = document.getElementById('storageQuotaWarningBanner');
+      if (banner) banner.style.display = 'none';
+    }
 
     function getTodayJstString() {
       try {
@@ -3850,6 +3731,8 @@
           hdrBtn.textContent = '✕ 閉じる';
           hdrBtn.style.background = '#6c757d';
         }
+        if (typeof renderMasterOptions === 'function') renderMasterOptions(false);
+        if (typeof updateStorageStatusUI === 'function') updateStorageStatusUI();
       }
     }
     window.handleAccHeaderClick = handleAccHeaderClick;
@@ -3996,8 +3879,12 @@
     function goToPrevHole() {
       if (state.currentHole > 1) {
         if (typeof triggerHaptic === 'function') triggerHaptic('medium');
+        try {
+          safeStorage.setItem('golf_prev_hole_backup', JSON.stringify(state));
+        } catch(e) {}
         state.currentHole--;
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        saveLocalStorage(true);
         triggerDraftSave();
         renderHoleView();
         showToast(`H${state.currentHole} へ移動`);
@@ -4009,8 +3896,12 @@
       if (state.currentHole < 18) {
         if (validateHoleInput(state.currentHole - 1)) {
           if (typeof triggerHaptic === 'function') triggerHaptic('medium');
+          try {
+            safeStorage.setItem('golf_prev_hole_backup', JSON.stringify(state));
+          } catch(e) {}
           state.currentHole++;
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          saveLocalStorage(true);
           triggerDraftSave();
           renderHoleView();
           showToast(`H${state.currentHole} へ移動`);
@@ -4332,8 +4223,11 @@
               persistMasterDataToStorage(res);
 
               // 🛡️ マスター同期完了時: 進行中ラウンド情報（コース・メンバー・スコア等）は絶対に上書き・リセットしない
-              renderMasterOptions(false);
-              renderHoleView();
+              // ⚡️ フリーズ根絶: ラウンド進行中（または設定画面閉じ中）は重い3,000コースDOM再構築をスキップ！
+              const isConfigOpen1 = document.getElementById('accBody') && document.getElementById('accBody').classList.contains('open');
+              if (isConfigOpen1 || !isValidOngoingRound(state)) {
+                renderMasterOptions(false);
+              }
 
               updateSyncBtns('マスター同期済', true);
               const uniqueCourseCount = res.totalCourses || (res.courseCatalog ? res.courseCatalog.length : 0);
@@ -4366,8 +4260,11 @@
               persistMasterDataToStorage(res);
 
               // 🛡️ マスター同期完了時: 進行中ラウンド情報（コース・メンバー・スコア等）は絶対に上書き・リセットしない
-              renderMasterOptions(false);
-              renderHoleView();
+              // ⚡️ フリーズ根絶: ラウンド進行中（または設定画面閉じ中）は重い3,000コースDOM再構築をスキップ！
+              const isConfigOpen1 = document.getElementById('accBody') && document.getElementById('accBody').classList.contains('open');
+              if (isConfigOpen1 || !isValidOngoingRound(state)) {
+                renderMasterOptions(false);
+              }
 
               updateSyncBtns('WebAPI同期済', true);
               const uniqueCourseCount = res.totalCourses || (res.courseCatalog ? res.courseCatalog.length : 0);
@@ -4390,8 +4287,11 @@
           persistMasterDataToStorage(masterData);
 
           // 🛡️ マスター同期完了時: 進行中ラウンド情報（コース・メンバー・スコア等）は絶対に上書き・リセットしない
-          renderMasterOptions(false);
-          renderHoleView();
+          // ⚡️ フリーズ根絶: ラウンド進行中（または設定画面閉じ中）は重い3,000コースDOM再構築をスキップ！
+          const isConfigOpen3 = document.getElementById('accBody') && document.getElementById('accBody').classList.contains('open');
+          if (isConfigOpen3 || !isValidOngoingRound(state)) {
+            renderMasterOptions(false);
+          }
 
           updateSyncBtns('同期済 (ローカル)', true);
           const cCount = masterData.courseCatalog ? masterData.courseCatalog.length : 0;
@@ -5088,11 +4988,6 @@ function renderHoleView() {
                 🟠 1ペナ: ${penVal > 0 ? penVal : 0}
               </button>
             </div>
-            <div style="display:flex; gap:6px; margin-top:6px; ${state.useGps ? '' : 'display:none;'}">
-              <button type="button" class="gps-tracer-btn" onclick="openShotTracerModal(${hIdx})" style="width:100%; background:linear-gradient(135deg, #1b4332, #2d6a4f); color:#fff; border:${(state.shotLogs && state.shotLogs[hIdx] && state.shotLogs[hIdx].length > 0) ? '1.5px solid #ffd166' : 'none'}; border-radius:6px; padding:7px 8px; font-size:0.77rem; font-weight:bold; cursor:pointer; display:${state.useGps ? 'flex' : 'none'}; align-items:center; justify-content:center; gap:4px; box-shadow:${(state.shotLogs && state.shotLogs[hIdx] && state.shotLogs[hIdx].length > 0) ? '0 0 6px rgba(255,209,102,0.5)' : 'none'};">
-                🛰️ GPS軌跡マップ (${getShotCountBadge(hIdx)}) ➔
-              </button>
-            </div>
           `;
         } else {
           // ⚡️ ワンタップ数字パレット モード（デフォルト）
@@ -5146,11 +5041,8 @@ function renderHoleView() {
                 </button>
               </div>
               <div style="display:flex; gap:6px; margin-top:6px;">
-                <button type="button" onclick="openClubSequenceModal(${hIdx})" style="flex:1.1; background:linear-gradient(135deg, #099268, #087f5b); color:#fff; border:${(state.clubSequences && state.clubSequences[hIdx] && state.clubSequences[hIdx].length > 0) ? '1.5px solid #a9e34b' : 'none'}; border-radius:6px; padding:7px 8px; font-size:0.79rem; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; box-shadow:${(state.clubSequences && state.clubSequences[hIdx] && state.clubSequences[hIdx].length > 0) ? '0 0 6px rgba(169,227,75,0.45)' : 'none'};">
+                <button type="button" onclick="openClubSequenceModal(${hIdx})" style="width:100%; background:linear-gradient(135deg, #099268, #087f5b); color:#fff; border:${(state.clubSequences && state.clubSequences[hIdx] && state.clubSequences[hIdx].length > 0) ? '1.5px solid #a9e34b' : 'none'}; border-radius:6px; padding:8px 8px; font-size:0.82rem; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; box-shadow:${(state.clubSequences && state.clubSequences[hIdx] && state.clubSequences[hIdx].length > 0) ? '0 0 6px rgba(169,227,75,0.45)' : 'none'};">
                   🏌️ クラブ順入力 (${getClubSeqBadge(hIdx)})
-                </button>
-                <button type="button" class="gps-tracer-btn" onclick="openShotTracerModal(${hIdx})" style="flex:0.9; background:linear-gradient(135deg, #1b4332, #2d6a4f); color:#fff; border:${(state.shotLogs && state.shotLogs[hIdx] && state.shotLogs[hIdx].length > 0) ? '1.5px solid #ffd166' : 'none'}; border-radius:6px; padding:7px 8px; font-size:0.77rem; font-weight:bold; cursor:pointer; display:${state.useGps ? 'flex' : 'none'}; align-items:center; justify-content:center; gap:4px; box-shadow:${(state.shotLogs && state.shotLogs[hIdx] && state.shotLogs[hIdx].length > 0) ? '0 0 6px rgba(255,209,102,0.5)' : 'none'};">
-                  🛰️ GPS軌跡 (${getShotCountBadge(hIdx)})
                 </button>
               </div>
               ${renderClubSeqPreviewHtml(hIdx)}
@@ -5166,7 +5058,7 @@ function renderHoleView() {
       container.innerHTML = fullCardsHtml;
 
       updateTomodachiCalculation();
-      saveLocalStorage();
+      // 🛡️ 二重保存解消: renderHoleView内でのsaveLocalStorage呼び出しを廃止（変更ハンドラ側からのみ実行）
       if (typeof updateHoleCompletionUI === 'function') {
         updateHoleCompletionUI();
       }
@@ -5784,6 +5676,8 @@ function renderHoleView() {
     var isSyncingToSheet = false;
     var hasPendingSheetSync = false;
     var draftSaveTimeout = null;
+    var draftRetryCount = 0;
+    var lastCloudSaveTime = null;
 
     function debouncedDraftSave(delay = 1000) {
       if (draftSaveTimeout) clearTimeout(draftSaveTimeout);
@@ -5821,7 +5715,12 @@ function renderHoleView() {
       try {
         if (isGasEnv()) {
           google.script.run
-            .withSuccessHandler(() => { onSyncFinish(); })
+            .withSuccessHandler(() => {
+              draftRetryCount = 0;
+              lastCloudSaveTime = new Date();
+              if (typeof updateStorageStatusUI === 'function') updateStorageStatusUI();
+              onSyncFinish();
+            })
             .withFailureHandler(err => {
               console.warn('[AutoSync] Background draft save warning (will retry on next hole):', err);
               onSyncFinish();
@@ -5830,14 +5729,34 @@ function renderHoleView() {
         } else {
           const apiUrl = getEffectiveApiUrl();
           if (apiUrl) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒タイムアウト
+
             fetch(apiUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({ action: 'saveDraft', payload: payload })
+              body: JSON.stringify({ action: 'saveDraft', payload: payload }),
+              signal: controller.signal
             })
-            .then(() => { onSyncFinish(); })
+            .then(() => {
+              clearTimeout(timeoutId);
+              draftRetryCount = 0;
+              lastCloudSaveTime = new Date();
+              if (typeof updateStorageStatusUI === 'function') updateStorageStatusUI();
+              onSyncFinish();
+            })
             .catch(err => {
-              console.warn('[AutoSync] WebAPI draft save warning (will retry on next hole):', err);
+              clearTimeout(timeoutId);
+              console.warn('[AutoSync] WebAPI draft save warning:', err);
+              draftRetryCount++;
+              if (draftRetryCount <= 3) {
+                const backoff = Math.pow(2, draftRetryCount) * 1000;
+                console.log(`[AutoSync] Retrying draft save in ${backoff}ms (attempt ${draftRetryCount}/3)...`);
+                setTimeout(triggerDraftSave, backoff);
+              } else {
+                console.warn('[AutoSync] Reached max draft save retries (3). Pausing until next change.');
+                draftRetryCount = 0;
+              }
               onSyncFinish();
             });
           } else {
@@ -6000,7 +5919,31 @@ function renderHoleView() {
       return null;
     }
 
-    function saveLocalStorage() {
+    // 💾 ストレージ・バックアップ保全ステータス管理
+    var saveLocalStorageTimeout = null;
+    var lastLocalSaveTime = null;
+
+    function saveLocalStorage(immediate = false) {
+      if (immediate) {
+        if (saveLocalStorageTimeout) {
+          clearTimeout(saveLocalStorageTimeout);
+          saveLocalStorageTimeout = null;
+        }
+        executeSaveLocalStorage();
+        return;
+      }
+
+      if (saveLocalStorageTimeout) {
+        clearTimeout(saveLocalStorageTimeout);
+      }
+      saveLocalStorageTimeout = setTimeout(() => {
+        saveLocalStorageTimeout = null;
+        executeSaveLocalStorage();
+      }, 250);
+    }
+    window.saveLocalStorage = saveLocalStorage;
+
+    function executeSaveLocalStorage() {
       try {
         const dataStr = JSON.stringify(state);
         safeStorage.setItem('MyScore_v1_State', dataStr);
@@ -6031,15 +5974,102 @@ function renderHoleView() {
           winState['golf_round_backup'] = dataStr;
           window.name = JSON.stringify(winState);
         } catch (wnErr) {}
+
+        lastLocalSaveTime = new Date();
+        if (typeof updateStorageStatusUI === 'function') updateStorageStatusUI();
       } catch (e) {
-        console.warn('saveLocalStorage error:', e);
+        console.warn('executeSaveLocalStorage error:', e);
       }
     }
+
+    // 🛡️ 画面非表示・タブ破棄時に未同期データを即時同期フラッシュ
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        saveLocalStorage(true);
+      }
+    });
+    window.addEventListener('pagehide', () => {
+      saveLocalStorage(true);
+    });
 
     function loadLocalStorage() {
       // 復元関数（restoreCurrentRound alias）
       restoreCurrentRound();
     }
+
+    // 📤 端末外への手動JSONバックアップ書き出し（共有／ダウンロード）
+    function exportCurrentRoundJsonFile() {
+      try {
+        const jsonStr = JSON.stringify(state, null, 2);
+        const dStr = (state.date || getTodayJstString()).replace(/[^0-9]/g, '');
+        const cName = (state.courseName || 'round').replace(/[\s\u3000]+/g, '_');
+        const fileName = `myscore_backup_${cName}_${dStr}.json`;
+
+        if (navigator.share && navigator.canShare) {
+          const file = new File([jsonStr], fileName, { type: 'application/json' });
+          if (navigator.canShare({ files: [file] })) {
+            navigator.share({
+              files: [file],
+              title: `マイスコア バックアップ (${cName})`,
+              text: `マイスコアのラウンドバックアップデータです。`
+            }).catch(e => {
+              if (e.name !== 'AbortError') fallbackDownloadJson(jsonStr, fileName);
+            });
+            return;
+          }
+        }
+        fallbackDownloadJson(jsonStr, fileName);
+      } catch(e) {
+        showAppAlert('バックアップファイルの出力に失敗しました: ' + e.message, 'ファイル出力');
+      }
+    }
+    window.exportCurrentRoundJsonFile = exportCurrentRoundJsonFile;
+
+    function fallbackDownloadJson(jsonStr, fileName) {
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 500);
+      showToast('📥 バックアップファイルを保存しました');
+    }
+
+    function updateStorageStatusUI() {
+      try {
+        const localEl = document.getElementById('lblLocalSaveTime');
+        const cloudEl = document.getElementById('lblCloudSaveTime');
+        const usageEl = document.getElementById('lblStorageUsage');
+
+        if (localEl && lastLocalSaveTime) {
+          localEl.textContent = lastLocalSaveTime.toLocaleTimeString('ja-JP');
+        }
+        if (cloudEl && lastCloudSaveTime) {
+          cloudEl.textContent = lastCloudSaveTime.toLocaleTimeString('ja-JP');
+        }
+        if (usageEl) {
+          let totalBytes = 0;
+          try {
+            const ls = window.localStorage;
+            if (ls) {
+              for (let i = 0; i < ls.length; i++) {
+                const k = ls.key(i);
+                const val = ls.getItem(k);
+                if (val) totalBytes += (k.length + val.length) * 2;
+              }
+            }
+          } catch(e) {}
+          const kb = Math.round(totalBytes / 1024);
+          usageEl.textContent = `約 ${kb.toLocaleString()} KB / 5 MB`;
+        }
+      } catch(e) {}
+    }
+    window.updateStorageStatusUI = updateStorageStatusUI;
 
     // ★【クラウド自動復旧】キャッシュ消失時の二段構え自動リカバリー（getLatestOngoingDraft参照＆正規化）
     function checkAndRecoverFromCloud() {
@@ -6067,7 +6097,7 @@ function renderHoleView() {
                 if (!p.bunkers || !Array.isArray(p.bunkers)) p.bunkers = new Array(18).fill(null);
               });
             }
-            saveLocalStorage();
+            saveLocalStorage(true);
             renderMasterOptions(false);
             renderHoleView();
             showToast('☁️ 本日の進行中ラウンドデータをクラウドから復旧しました');
@@ -6090,38 +6120,39 @@ function renderHoleView() {
       }
     }
 
-    // ★【手動復元】同一端末内の多重保護バックアップまたはクラウド最新下書きから安全に呼び出す
+    // ★【手動復元】同一端末内の多重保護バックアップまたはクラウド最新下書きから安全に呼び出す（データなしと検証落ちの分離）
     function manualRestoreFromBackup() {
       let restoredObj = null;
+      let sourceKey = '';
 
-      try {
-        const protSaved = getMultiStoredItem('golf_protected_backup');
-        if (protSaved) {
-          const parsed = JSON.parse(protSaved);
-          if (isValidOngoingRound(parsed)) {
-            restoredObj = parsed;
-          }
-        }
-      } catch (e) {
-        console.warn('Read golf_protected_backup error:', e);
-      }
+      // 優先順にストレージを走査（golf_prev_hole_backup も探索対象に含める）
+      const keysToTry = [
+        'golf_protected_backup',
+        'golf_current_round_backup',
+        'MyScore_v1_State',
+        'golf_prev_hole_backup'
+      ];
 
-      // フォールバック: 通常キーや直前キーも検査
-      if (!restoredObj) {
+      for (const k of keysToTry) {
         try {
-          const curSaved = getMultiStoredItem('golf_current_round_backup') || getMultiStoredItem('MyScore_v1_State');
-          if (curSaved) {
-            const parsed = JSON.parse(curSaved);
-            if (isValidOngoingRound(parsed)) {
+          const raw = getMultiStoredItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
               restoredObj = parsed;
+              sourceKey = k;
+              break;
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn(`Read ${k} error:`, e);
+        }
       }
 
-      const applyRestoredData = (targetObj, sourceLabel) => {
+      const applyRestoredData = (targetObj, sourceLabel, confirmMessage) => {
+        const msg = confirmMessage || (sourceLabel + 'に保存されている入力データ（メンバー・スコア）を呼び出しますか？');
         showAppConfirm(
-          sourceLabel + 'に保存されている入力データ（メンバー・スコア）を呼び出しますか？',
+          msg,
           'バックアップの復元',
           {
             confirmText: '復元する',
@@ -6134,7 +6165,7 @@ function renderHoleView() {
                     if (!p.bunkers || !Array.isArray(p.bunkers)) p.bunkers = new Array(18).fill(null);
                   });
                 }
-                saveLocalStorage();
+                saveLocalStorage(true);
                 renderMasterOptions(false);
                 renderHoleView();
                 closeAccordion();
@@ -6147,19 +6178,31 @@ function renderHoleView() {
         );
       };
 
-      // 1. ローカル多重ストレージに有効データが存在する場合
-      if (restoredObj && isValidOngoingRound(restoredObj)) {
-        applyRestoredData(restoredObj, 'この端末');
+      // 1. ローカル多重ストレージにデータが存在する場合（isValidOngoingRound判定落ちでも切り捨てず提示）
+      if (restoredObj) {
+        const cName = restoredObj.courseName || 'コース未選択';
+        const hNo = restoredObj.currentHole || 1;
+        const isCompleteValid = isValidOngoingRound(restoredObj);
+        const subMsg = isCompleteValid ? '' : '（※一部入力途中の不完全なデータの可能性があります）';
+        const label = (sourceKey === 'golf_prev_hole_backup') ? '直前ホール確定バックアップ' : 'この端末';
+        const promptMsg = `${label}に保存されている入力データ【${cName} / H${hNo}】を呼び出しますか？\n${subMsg}`;
+        applyRestoredData(restoredObj, label, promptMsg);
         return;
       }
 
       // 2. ローカルにない場合はサーバーから最新ドラフト取得を試行
       showToast('☁️ クラウド最新バックアップを確認中...');
       const onServerDraftRetrieved = (res) => {
-        if (res && res.success && res.draft && isValidOngoingRound(res.draft)) {
-          applyRestoredData(res.draft, 'クラウド(最新下書き)');
+        if (res && res.success && res.draft && typeof res.draft === 'object') {
+          const draft = res.draft;
+          const cName = draft.courseName || 'コース未選択';
+          const hNo = draft.currentHole || 1;
+          const isCompleteValid = isValidOngoingRound(draft);
+          const subMsg = isCompleteValid ? '' : '（※一部入力途中の可能性があります）';
+          const promptMsg = `クラウドに保存されている入力データ【${cName} / H${hNo}】を呼び出しますか？\n${subMsg}`;
+          applyRestoredData(draft, 'クラウド(最新下書き)', promptMsg);
         } else {
-          showAppAlert('⚠️ 保存されたバックアップデータが見つかりませんでした。\\n（端末・クラウドともに進行中の有効データがありません）', 'バックアップ呼び出し');
+          showAppAlert('⚠️ 保存されたバックアップデータが見つかりませんでした。\n（端末・クラウドともに進行中の有効データがありません）', 'バックアップ呼び出し');
         }
       };
 
@@ -13259,726 +13302,23 @@ function renderHoleView() {
   </script>
 
   <!-- ========================================================= -->
-  <!-- 🚀 Block 5: ショットトレーサー・GPS・Leafletマップ -->
+  <!-- 🚀 Block 5: 打順入力ボトムシート（クラブシーケンス） -->
   <!-- ========================================================= -->
   <script>
-    console.log("[ScoreRec] Loading Block 5: ショットトレーサー・GPS・Leafletマップ...");
-    function isValidShotCoord(s) {
-      return (
-        s && typeof s.lat === 'number' && typeof s.lng === 'number' &&
-        !isNaN(s.lat) && !isNaN(s.lng) && isFinite(s.lat) && isFinite(s.lng)
-      );
-    }
-
-    function normalizeShotLogItem(s, idx) {
-      if (!s) return null;
-      if (typeof s === 'string') {
-        return {
-          shotNum: (idx !== undefined ? idx + 1 : 1),
-          shotNumber: (idx !== undefined ? idx + 1 : 1),
-          club: s,
-          res: '',
-          lie: (s === 'PT') ? 'Green' : 'Fairway',
-          lat: null,
-          lng: null,
-          distance: null,
-          note: ''
-        };
-      }
-      const sNo = (s.shotNum !== undefined) ? s.shotNum : ((s.shotNumber !== undefined) ? s.shotNumber : (idx !== undefined ? idx + 1 : 1));
-      let clubName = '';
-      let resVal = s.res || '';
-      if (typeof s.club === 'object' && s.club !== null) {
-        clubName = s.club.club || s.club.display || '';
-        if (s.club.res && !resVal) resVal = s.club.res;
-      } else {
-        clubName = String(s.club || '');
-      }
-
-      const lat = (typeof s.lat === 'number' && !isNaN(s.lat) && isFinite(s.lat)) ? s.lat : null;
-      const lng = (typeof s.lng === 'number' && !isNaN(s.lng) && isFinite(s.lng)) ? s.lng : null;
-      const dist = (typeof s.distance === 'number' && !isNaN(s.distance) && isFinite(s.distance)) ? s.distance : 0;
-
-      return {
-        ...s,
-        shotNum: sNo,
-        shotNumber: sNo,
-        club: clubName,
-        res: resVal,
-        lat: lat,
-        lng: lng,
-        distance: dist,
-        lie: s.lie || (clubName === 'PT' ? 'Green' : 'Fairway')
-      };
-    }
-
-    function openShotTracerModal(hIdx) {
-      currentShotTracerHole = (hIdx !== undefined && hIdx !== null) ? Number(hIdx) : (state.currentHole - 1);
-      const modal = document.getElementById('modalShotTracer');
-      if (modal) {
-        modal.classList.add('open');
-      }
-
-      initShotMapIfNeeded();
-
-      setTimeout(() => {
-        try {
-          if (shotMapInstance) {
-            shotMapInstance.invalidateSize();
-          }
-          renderShotTracerUI();
-          recenterShotMap();
-        } catch (err) {
-          console.error('openShotTracerModal error:', err);
-        }
-      }, 100);
-    }
-
-    function closeShotTracerModal() {
-      const modal = document.getElementById('modalShotTracer');
-      if (modal) {
-        modal.classList.remove('open');
-      }
-      clearPendingShot();
-      renderHoleView();
-    }
-
-    function createMarkerIcon(label, bgColor, borderColor) {
-      return L.divIcon({
-        className: 'custom-shot-marker',
-        html: `<div style="
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          background: ${bgColor || '#2d6a4f'};
-          color: #ffffff;
-          border: 2px solid ${borderColor || '#ffffff'};
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 11px;
-          font-weight: 800;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-          text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-        ">${label}</div>`,
-        iconSize: [26, 26],
-        iconAnchor: [13, 13],
-        popupAnchor: [0, -14]
-      });
-    }
-
-    function getNextShotNumber(shots) {
-      if (!shots || shots.length === 0) return 0; // Tee
-      const last = shots[shots.length - 1];
-      if (last.penaltyType === 'OB_PRE4') return 4;
-      const lastNum = (last.shotNum !== undefined) ? last.shotNum : ((last.shotNumber !== undefined) ? last.shotNumber : 0);
-      if (last.penaltyType === 'OB_RETEE') return (lastNum || 1) + 2;
-      return (lastNum || 0) + 1;
-    }
-
-    function renderShotTracerUI() {
-      // 1. ヘッダー更新
-      const parVal = (masterData && masterData.pars && masterData.pars[currentShotTracerHole]) || 4;
-      const holeTitle = document.getElementById('shotTracerHoleTitle');
-      if (holeTitle) {
-        holeTitle.textContent = `H${currentShotTracerHole + 1} (PAR ${parVal}) ショット軌跡`;
-      }
-
-      const btnPrevH = document.getElementById('btnShotPrevHole');
-      const btnNextH = document.getElementById('btnShotNextHole');
-      if (btnPrevH) btnPrevH.disabled = (currentShotTracerHole === 0);
-      if (btnNextH) btnNextH.disabled = (currentShotTracerHole === 17);
-
-      if (!state.shotLogs) state.shotLogs = Array(18).fill(null).map(() => []);
-      if (!state.shotLogs[currentShotTracerHole]) state.shotLogs[currentShotTracerHole] = [];
-      const shots = state.shotLogs[currentShotTracerHole];
-
-      // 2. ショットシーケンスリスト描画
-      const listEl = document.getElementById('shotSequenceList');
-      if (listEl) {
-        if (shots.length === 0) {
-          listEl.innerHTML = `
-            <div style="text-align:center; padding:12px; font-size:0.75rem; color:#868e96; background:#fff; border-radius:6px; border:1px dashed #ced4da;">
-              まだこのホールの記録がありません。<br>
-              マップ上をタップまたは「📍 現在地GPSを取得」を押して、ティグラウンド（開始位置）を設定してください。
-            </div>
-          `;
-        } else {
-          listEl.innerHTML = shots.map((rawS, idx) => {
-            const s = normalizeShotLogItem(rawS, idx);
-            if (!s) return '';
-            let cardClass = '';
-            let label = `第${s.shotNum}打`;
-            if (s.shotNum === 0) {
-              label = '⛳️ TEE';
-            } else if (s.lie === 'OB') {
-              cardClass = 'shot-ob';
-              label = `第${s.shotNum}打 (OB)`;
-            } else if (s.club === 'DROP') {
-              cardClass = 'shot-pre4';
-              label = '⛳️ 特設ティ';
-            } else if (s.club === 'PT' || s.lie === 'Green') {
-              cardClass = 'shot-cup';
-            }
-
-            const hasCoord = isValidShotCoord(s);
-            const distText = s.distance > 0 ? `${s.distance} yd` : (s.shotNum === 0 ? '開始点' : (hasCoord ? '-' : '<span style="font-size:0.7rem; color:#adb5bd;">(座標未記録)</span>'));
-            const noteText = s.note ? `<span style="font-size:0.68rem; color:#868e96; margin-left:4px;">${s.note}</span>` : '';
-            const resBadge = (typeof getResBadgeHtml === 'function') ? getResBadgeHtml(s.res) : (s.res ? ` [${s.res}]` : '');
-
-            return `
-              <div class="shot-card-item ${cardClass}">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span style="font-weight:bold; font-size:0.82rem; color:#1b4332;">${label}</span>
-                  <span style="background:#e9ecef; color:#212529; font-weight:bold; padding:1px 6px; border-radius:4px; font-size:0.72rem;">${s.club}${resBadge}</span>
-                  <span style="font-size:0.75rem; color:#495057;">${getLieDisplay(s.lie)}</span>
-                  ${noteText}
-                </div>
-                <div style="font-weight:bold; font-size:0.8rem; color:${s.distance > 0 ? '#1971c2' : '#868e96'};">
-                  ${distText}
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-      }
-
-      // 3. 入力コントロールラベル・ボタンの更新
-      const labelEl = document.getElementById('currentShotInputLabel');
-      const addBtn = document.getElementById('btnAddShot');
-      const clubArea = document.getElementById('shotClubGrid');
-      const lieArea = document.getElementById('shotLieGrid');
-
-      if (shots.length === 0) {
-        if (labelEl) labelEl.textContent = '⛳️ 開始点（ティグラウンド）を設定:';
-        if (addBtn) {
-          addBtn.textContent = '⛳️ ティグラウンドを登録';
-          addBtn.style.background = '#2b8a3e';
-        }
-        if (clubArea) clubArea.style.opacity = '0.5';
-        if (lieArea) lieArea.style.opacity = '0.5';
-      } else {
-        const nextNum = getNextShotNumber(shots);
-        if (labelEl) labelEl.textContent = `📍 次の1打（第${nextNum}打目）を記録:`;
-        if (addBtn) {
-          addBtn.textContent = `➕ 第${nextNum}打を登録`;
-          addBtn.style.background = '#2b8a3e';
-        }
-        if (clubArea) clubArea.style.opacity = '1.0';
-        if (lieArea) lieArea.style.opacity = '1.0';
-      }
-
-      // 4. グリーンモードの自動判定
-      const lastShot = shots.length > 0 ? shots[shots.length - 1] : null;
-      const isHoledOut = shots.some(s => s.lie === 'Cup' || (s.note && s.note.includes('カップイン')) || (s.note && s.note.includes('チップイン')));
-      if (lastShot && (lastShot.lie === 'Green' || lastShot.club === 'PT') && !isHoledOut) {
-        setGreenMode(true);
-      } else {
-        setGreenMode(false);
-      }
-
-      clearPendingShot();
-      redrawShotMap(shots);
-    }
-
-    function redrawShotMap(shots) {
-      if (!shotMapInstance || !shotMarkersLayer || !shotLinesLayer) return;
-
-      shotMarkersLayer.clearLayers();
-      shotLinesLayer.clearLayers();
-
-      if (!shots || shots.length === 0) return;
-
-      let prevValidShot = null;
-      for (let i = 0; i < shots.length; i++) {
-        const s = normalizeShotLogItem(shots[i], i);
-        if (!s || !isValidShotCoord(s)) continue;
-
-        const sNo = s.shotNum;
-        let icon;
-        if (sNo === 0) {
-          icon = createMarkerIcon('⛳️', '#1b4332', '#ffd166');
-        } else if (s.lie === 'OB') {
-          icon = createMarkerIcon('OB', '#c92a2a', '#ffffff');
-        } else if (s.club === 'DROP') {
-          icon = createMarkerIcon('特', '#e8590c', '#ffd166');
-        } else if (s.club === 'PT') {
-          icon = createMarkerIcon('P', '#1971c2', '#ffffff');
-        } else {
-          icon = createMarkerIcon(sNo, '#2d6a4f', '#ffffff');
-        }
-
-        const resText = s.res ? ` (${s.res})` : '';
-        const marker = L.marker([s.lat, s.lng], { icon: icon }).addTo(shotMarkersLayer);
-        const popupText = `<b>${sNo === 0 ? '⛳️ ティグラウンド' : `第${sNo}打: ${s.club}${resText}`}</b><br>ライ: ${getLieDisplay(s.lie)}${s.distance > 0 ? `<br>飛距離: <b>${s.distance} yd</b>` : ''}${s.note ? `<br>${s.note}` : ''}`;
-        marker.bindPopup(popupText);
-
-        // 前の有効な座標を持つショットからの弾道ライン
-        if (prevValidShot && isValidShotCoord(prevValidShot)) {
-          const isOb = (s.lie === 'OB');
-          L.polyline([[prevValidShot.lat, prevValidShot.lng], [s.lat, s.lng]], {
-            color: isOb ? '#fa5252' : '#ffd166',
-            weight: 3.5,
-            opacity: 0.9,
-            dashArray: isOb ? '6, 6' : null
-          }).addTo(shotLinesLayer);
-
-          if (s.distance > 0) {
-            const midLat = (prevValidShot.lat + s.lat) / 2.0;
-            const midLng = (prevValidShot.lng + s.lng) / 2.0;
-            L.marker([midLat, midLng], {
-              icon: L.divIcon({
-                className: 'shot-dist-badge',
-                html: `<div style="
-                  background: rgba(0, 0, 0, 0.75);
-                  color: #ffd166;
-                  padding: 1px 6px;
-                  border-radius: 10px;
-                  font-size: 10px;
-                  font-weight: bold;
-                  border: 1px solid rgba(255, 209, 102, 0.6);
-                  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
-                  white-space: nowrap;
-                  transform: translate(-50%, -50%);
-                ">${s.distance} yd</div>`,
-                iconSize: [0, 0],
-                iconAnchor: [0, 0]
-              }),
-              interactive: false
-            }).addTo(shotLinesLayer);
-          }
-        }
-        prevValidShot = s;
-      }
-    }
-
-    function recenterShotMap() {
-      if (!shotMapInstance) return;
-      const rawShots = (state.shotLogs && state.shotLogs[currentShotTracerHole]) || [];
-      const shots = rawShots.map((s, idx) => normalizeShotLogItem(s, idx)).filter(Boolean);
-      const validShots = shots.filter(isValidShotCoord);
-
-      if (validShots.length > 0) {
-        if (validShots.length === 1) {
-          shotMapInstance.setView([validShots[0].lat, validShots[0].lng], 17);
-        } else {
-          try {
-            const bounds = L.latLngBounds(validShots.map(s => [s.lat, s.lng]));
-            shotMapInstance.fitBounds(bounds, { padding: [35, 35], maxZoom: 18 });
-          } catch (e) {
-            shotMapInstance.setView([validShots[0].lat, validShots[0].lng], 17);
-          }
-        }
-        return;
-      }
-
-      // このホールに有効座標ショットが無い場合、直近のホールの位置を探す
-      if (state.shotLogs) {
-        for (let h = currentShotTracerHole - 1; h >= 0; h--) {
-          const prevHoleRaw = state.shotLogs[h] || [];
-          const prevValid = prevHoleRaw.map((s, idx) => normalizeShotLogItem(s, idx)).filter(isValidShotCoord);
-          if (prevValid.length > 0) {
-            const lastS = prevValid[prevValid.length - 1];
-            shotMapInstance.setView([lastS.lat, lastS.lng], 17);
-            return;
-          }
-        }
-      }
-
-      // 3. 選択中のゴルフ場の緯度・経度がある場合
-      const courseCoord = getCurrentCourseCoord();
-      if (courseCoord) {
-        // もし直近の現在地GPSがゴルフ場敷地付近 (3,000ヤード以内) にある場合は現在地を優先フォーカス
-        if (isValidShotCoord(lastUserLocation)) {
-          try {
-            const distFromCourse = calcDistanceYards(courseCoord.lat, courseCoord.lng, lastUserLocation.lat, lastUserLocation.lng);
-            if (distFromCourse <= 3000) {
-              shotMapInstance.setView([lastUserLocation.lat, lastUserLocation.lng], 17);
-              return;
-            }
-          } catch (e) {}
-        }
-        // ゴルフ場の緯度経度を中心に表示
-        shotMapInstance.setView([courseCoord.lat, courseCoord.lng], 16);
-
-        // 現在地が未取得の場合はバックグラウンドで現在地を測位し、ゴルフ場内(3,000ヤード以内)にいれば現在地へ寄せる
-        if (state.useGps && !isValidShotCoord(lastUserLocation) && navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const lat = pos.coords.latitude;
-              const lng = pos.coords.longitude;
-              lastUserLocation = { lat: lat, lng: lng };
-              try {
-                if (shotMapInstance && calcDistanceYards(courseCoord.lat, courseCoord.lng, lat, lng) <= 3000) {
-                  shotMapInstance.setView([lat, lng], 17);
-                }
-              } catch (e) {}
-            },
-            () => {},
-            { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
-          );
-        }
-        return;
-      }
-
-      // もしゴルフ場が選択されているのに緯度経度がまだ未取得の場合はオンデマンド取得して再センタリング
-      if (state.courseName && typeof fetchCourseStrategiesIfNeeded === 'function') {
-        fetchCourseStrategiesIfNeeded(state.courseName, () => {
-          const fetchedCoord = getCurrentCourseCoord();
-          if (fetchedCoord && shotMapInstance) {
-            shotMapInstance.setView([fetchedCoord.lat, fetchedCoord.lng], 16);
-          }
-        });
-      }
-
-      // 4. 現在位置（GPS履歴または自動測位）がある場合
-      if (isValidShotCoord(lastUserLocation)) {
-        shotMapInstance.setView([lastUserLocation.lat, lastUserLocation.lng], 17);
-        return;
-      }
-
-      if (state.useGps && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            lastUserLocation = { lat: lat, lng: lng };
-            if (shotMapInstance && !getCurrentCourseCoord()) {
-              shotMapInstance.setView([lat, lng], 17);
-            }
-          },
-          () => {},
-          { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
-        );
-      }
-
-      // 5. フォールバック表示
-      shotMapInstance.setView([35.9189, 139.3872], 16);
-    }
-
-    function clearPendingShot() {
-      currentPendingPoint = null;
-      if (currentPendingMarker && shotMapInstance) {
-        shotMapInstance.removeLayer(currentPendingMarker);
-        currentPendingMarker = null;
-      }
-      if (currentPendingLine && shotMapInstance) {
-        shotMapInstance.removeLayer(currentPendingLine);
-        currentPendingLine = null;
-      }
-      const distEl = document.getElementById('shotDistanceDisplay');
-      if (distEl) distEl.textContent = '推定飛距離: - yd';
-    }
-
-    function onShotMapClicked(lat, lng) {
-      if (!shotMapInstance) return;
-
-      const rawShots = (state.shotLogs && state.shotLogs[currentShotTracerHole]) || [];
-      const shots = rawShots.map((s, idx) => normalizeShotLogItem(s, idx)).filter(Boolean);
-      const validShots = shots.filter(isValidShotCoord);
-      const distEl = document.getElementById('shotDistanceDisplay');
-
-      if (currentPendingMarker) shotMapInstance.removeLayer(currentPendingMarker);
-      if (currentPendingLine) shotMapInstance.removeLayer(currentPendingLine);
-
-      // 一時マーカーを描画
-      currentPendingMarker = L.marker([lat, lng], {
-        icon: L.divIcon({
-          className: 'pending-shot-marker',
-          html: `<div style="
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: #fa5252;
-            color: #fff;
-            border: 2px dashed #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            box-shadow: 0 0 10px rgba(250,82,82,0.8);
-          ">🎯</div>`,
-          iconSize: [28, 28],
-          iconAnchor: [14, 14]
-        })
-      }).addTo(shotMapInstance);
-
-      if (validShots.length === 0) {
-        // 有効な座標がまだ無い場合はティグラウンド（開始点）指定
-        currentPendingPoint = { lat: lat, lng: lng, distance: 0 };
-        if (distEl) distEl.textContent = '⛳️ ティグラウンド位置指定';
-      } else {
-        const lastShot = validShots[validShots.length - 1];
-        const dist = calcDistanceYards(lastShot.lat, lastShot.lng, lat, lng);
-        currentPendingPoint = { lat: lat, lng: lng, distance: dist };
-
-        if (distEl) distEl.textContent = `推定飛距離: ${dist} yd`;
-
-        // 直前の有効ショットから一時ラインを描画
-        currentPendingLine = L.polyline([[lastShot.lat, lastShot.lng], [lat, lng]], {
-          color: '#00b4d8',
-          weight: 2.5,
-          dashArray: '5, 5'
-        }).addTo(shotMapInstance);
-      }
-    }
-
-    function getGpsLocation() {
-      if (!state.useGps) {
-        showToast('⚠️ ラウンド設定でGPS機能がOFFになっています');
-        return;
-      }
-      if (!navigator.geolocation) {
-        showToast('⚠️ お使いの環境はGPS測位に対応していません。マップ上をタップして地点を指定してください。');
-        return;
-      }
-
-      const btn = document.getElementById('btnGetGpsLoc');
-      const originalText = btn ? btn.textContent : '';
-      if (btn) {
-        btn.textContent = '🛰️ 測位中...';
-        btn.disabled = true;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (btn) {
-            btn.textContent = originalText;
-            btn.disabled = false;
-          }
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          lastUserLocation = { lat: lat, lng: lng };
-
-          onShotMapClicked(lat, lng);
-          if (shotMapInstance) {
-            shotMapInstance.setView([lat, lng], 18);
-          }
-          showToast(`📍 現在地を取得しました (精度: ±${Math.round(pos.coords.accuracy)}m)`);
-        },
-        (err) => {
-          if (btn) {
-            btn.textContent = originalText;
-            btn.disabled = false;
-          }
-          console.warn('GPS Error:', err);
-          showToast('⚠️ GPSを取得できませんでした。マップ上を直接タップして地点を指定してください。');
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
-
-    function addShotRecord() {
-      if (!state.shotLogs) state.shotLogs = Array(18).fill(null).map(() => []);
-      if (!state.shotLogs[currentShotTracerHole]) state.shotLogs[currentShotTracerHole] = [];
-      const shots = state.shotLogs[currentShotTracerHole];
-
-      if (!currentPendingPoint) {
-        showToast('⚠️ マップ上をタップするか「現在地GPS」を押して地点を指定してください');
-        return;
-      }
-
-      // 有効な座標を持つショットがあるかどうか判定
-      const validShots = shots.map((s, idx) => normalizeShotLogItem(s, idx)).filter(isValidShotCoord);
-
-      if (shots.length === 0 || validShots.length === 0) {
-        // ティグラウンドの確定
-        shots.push({
-          shotNum: 0,
-          shotNumber: 0,
-          club: 'TEE',
-          lie: 'Tee',
-          lat: currentPendingPoint.lat,
-          lng: currentPendingPoint.lng,
-          distance: 0,
-          note: 'ティグラウンド',
-          timestamp: Date.now()
-        });
-        showToast('⛳️ ティグラウンドを開始点として登録しました！');
-      } else {
-        const nextNum = getNextShotNumber(shots);
-        const isOb = (currentSelectedLie === 'OB');
-        const penaltyType = isOb ? (currentSelectedObOption === 'pre4' ? 'OB_PRE4' : 'OB_RETEE') : null;
-        let note = '';
-        if (isOb) {
-          note = (currentSelectedObOption === 'pre4') ? 'OB (プレ4特設ティへ)' : 'OB (打ち直し)';
-        }
-
-        shots.push({
-          shotNum: nextNum,
-          shotNumber: nextNum,
-          club: currentSelectedClub,
-          lie: currentSelectedLie,
-          penaltyType: penaltyType,
-          lat: currentPendingPoint.lat,
-          lng: currentPendingPoint.lng,
-          distance: currentPendingPoint.distance,
-          note: note,
-          timestamp: Date.now()
-        });
-
-        if (isOb && currentSelectedObOption === 'pre4') {
-          showToast(`⚠️ 第${nextNum}打: OBを登録しました。次は特設ティからの第4打となります。`);
-        } else if (currentSelectedLie === 'Green') {
-          showToast(`🎉 第${nextNum}打 (${currentSelectedClub} / ${currentPendingPoint.distance}yd) グリーンオン！パット数を選択してホールアウトしてください`);
-        } else {
-          showToast(`✅ 第${nextNum}打 (${currentSelectedClub} / ${currentPendingPoint.distance}yd) を登録しました！`);
-        }
-      }
-
-      saveLocalStorage();
-      renderShotTracerUI();
-    }
-
-    function undoLastShot() {
-      const shots = (state.shotLogs && state.shotLogs[currentShotTracerHole]) || [];
-      if (shots.length === 0) {
-        showToast('⚠️ 取り消すショット記録はありません');
-        return;
-      }
-
-      const popped = shots.pop();
-      saveLocalStorage();
-      renderShotTracerUI();
-      const pNum = (popped && (popped.shotNum !== undefined ? popped.shotNum : popped.shotNumber)) || 0;
-      showToast(`↩ ${pNum === 0 ? 'ティグラウンド' : `第${pNum}打`} の記録を取り消しました`);
-    }
-
-    function syncShotToHoleScore() {
-      const rawShots = (state.shotLogs && state.shotLogs[currentShotTracerHole]) || [];
-      const shots = rawShots.map((s, idx) => normalizeShotLogItem(s, idx)).filter(Boolean);
-      if (shots.length === 0) {
-        showToast('⚠️ 反映できるショット記録がありません');
-        return;
-      }
-
-      const actualSwings = shots.filter(s => s.shotNum > 0 && s.club !== 'DROP');
-      let calcScore = 0;
-      let calcPutts = 0;
-      let calcBunkers = 0;
-      let calcObs = 0;
-      let calcPenalties = 0;
-
-      actualSwings.forEach(s => {
-        if (s.club === 'PT') {
-          calcPutts++;
-        }
-        if (s.lie === 'Bunker') {
-          calcBunkers++;
-        }
-        if (s.lie === 'OB') {
-          calcObs++;
-          if (s.penaltyType === 'OB_PRE4') {
-            calcScore += 2; // プレ4ペナ
-          } else {
-            calcScore += 1; // 打ち直しペナ
-          }
-        } else if (s.lie === 'Penalty') {
-          calcPenalties++;
-          calcScore += 1;
-        }
-      });
-
-      calcScore += actualSwings.length;
-
-      const maxShotNum = Math.max(...shots.map(s => s.shotNum || 0));
-      if (maxShotNum > calcScore) {
-        calcScore = maxShotNum;
-      }
-
-      const p1 = state.players[0];
-      if (!p1.scores) p1.scores = new Array(18).fill(0);
-      if (!p1.putts) p1.putts = new Array(18).fill(null);
-      if (!p1.bunkers) p1.bunkers = new Array(18).fill(null);
-      if (!p1.obs) p1.obs = new Array(18).fill(null);
-      if (!p1.penalties) p1.penalties = new Array(18).fill(null);
-
-      p1.scores[currentShotTracerHole] = calcScore;
-      p1.putts[currentShotTracerHole] = calcPutts;
-      p1.bunkers[currentShotTracerHole] = calcBunkers;
-      p1.obs[currentShotTracerHole] = calcObs;
-      p1.penalties[currentShotTracerHole] = calcPenalties;
-
-      renderHoleView();
-      saveLocalStorage();
-      showToast(`✅ H${currentShotTracerHole + 1}のスコア枠に反映: ${calcScore}打 (${calcPutts}パット, OB:${calcObs}, 砂:${calcBunkers})`);
-    }
-
-    // =================================================================
-    // 🏌️‍♂️ 打順ショットカウンター ボトムシート ロジック (1タップ評価＆ミス傾向対応)
-    // =================================================================
-
-    function getResBadgeHtml(res) {
-      if (!res) return '';
-      let cls = 'res-badge';
-      if (res === '◎') cls += ' res-nice';
-      else if (res === '◯') cls += ' res-ok';
-      else if (res === '左') cls += ' res-left';
-      else if (res === '右') cls += ' res-right';
-      else if (res === '短') cls += ' res-short';
-      else if (res === '奥') cls += ' res-over';
-      else if (res === 'ダ') cls += ' res-duff';
-      else if (res === 'ト') cls += ' res-top';
-      return `<span class="${cls}">${res}</span>`;
-    }
-
-    function getClubSeqBadge(hIdx) {
-      if (state.clubSequences && state.clubSequences[hIdx] && state.clubSequences[hIdx].length > 0) {
-        const seq = state.clubSequences[hIdx].map(normalizeClubSequenceItem).filter(Boolean);
-        const total = seq.reduce((sum, s) => sum + getSeqItemStrokeCount(s), 0);
-        return `${total}打`;
-      }
-      return '未入力';
-    }
-
-    function renderClubSeqPreviewHtml(hIdx) {
-      if (!state.clubSequences || !state.clubSequences[hIdx] || state.clubSequences[hIdx].length === 0) {
-        return '';
-      }
-      const seq = state.clubSequences[hIdx].map(normalizeClubSequenceItem).filter(Boolean);
-      let runningNum = 1;
-      const items = seq.map((s) => {
-        let cls = 'seq-chip';
-        let txt = '';
-        const resBadge = getResBadgeHtml(s.res);
-        if (s.type === 'bunker' || s.club === 'バンカー' || s.club === '砂' || s.club === '🏖️バンカー') {
-          // バンカーは打数非加算マーカー（番号なし・runningNumを進めない）
-          cls += ' chip-bunker';
-          txt = `🏖️バンカー${resBadge}`;
-        } else if (s.club === 'PT') {
-          cls += ' chip-pt';
-          txt = `${runningNum}.${s.display}${resBadge}`;
-          runningNum += 1;
-        } else if (s.isBunker) {
-          cls += ' chip-bunker';
-          txt = `${runningNum}.${s.display}${resBadge}`;
-          runningNum += 1;
-        } else if (s.type === 'pre4') {
-          cls += ' chip-pre4';
-          txt = `②③プレ4${resBadge}`;
-          runningNum += 2;
-        } else if (s.type === 'ob') {
-          cls += ' chip-ob';
-          txt = `OB(+1)${resBadge}`;
-          runningNum += 1;
-        } else if (s.type === 'penalty') {
-          cls += ' chip-pen';
-          txt = `ペナ(+1)${resBadge}`;
-          runningNum += 1;
-        } else {
-          txt = `${runningNum}.${s.display}${resBadge}`;
-          runningNum += 1;
-        }
-        return `<span class="${cls}" style="font-size:0.68rem; padding:2px 6px;">${txt}</span>`;
-      }).join('<span style="color:#adb5bd; font-size:0.65rem;">➔</span>');
-
-      return `
-        <div style="margin-top:4px; display:flex; align-items:center; gap:4px; overflow-x:auto; padding:3px 2px;">
-          <span style="font-size:0.68rem; color:#868e96; font-weight:bold; white-space:nowrap;">打順:</span>
-          ${items}
-        </div>
-      `;
-    }
+    console.log("[ScoreRec] Loading Block 5: 打順入力ボトムシート（クラブシーケンス）...");
+
+    // 🛡️ GPS機能廃止に伴う安全スタブ（未定義例外完全防止）
+    function openShotTracerModal(hIdx) {}
+    function closeShotTracerModal() {}
+    function updateGpsButtonsVisibility() {}
+    function getShotCountBadge(hIdx) { return ''; }
+    function normalizeShotLogItem(s, idx) { return s; }
+    function isValidShotCoord(s) { return false; }
+    function calcDistanceYards() { return null; }
+    function getLieBadgeText(lie) { return lie || '-'; }
+    window.openShotTracerModal = openShotTracerModal;
+    window.closeShotTracerModal = closeShotTracerModal;
+    window.updateGpsButtonsVisibility = updateGpsButtonsVisibility;
 
     function openClubSequenceModal(hIdx) {
       if (hIdx === undefined || hIdx === null) {
@@ -14540,10 +13880,8 @@ function renderHoleView() {
       }
 
       if (!state.shotLogs) state.shotLogs = Array(18).fill(null).map(() => []);
-      const existingShots = state.shotLogs[hIdx] || [];
-      const hasAnyCoord = existingShots.some(s => s && (typeof s.lat === 'number' && !isNaN(s.lat) && isFinite(s.lat)));
 
-      // バンカーマーカー（打数非加算）を除いた実打リストを構築し、直前のバンカーマーカーがあればその打のライをBunkerにする
+      // バンカーマーカー（打数非加算）を除いた実打リストを構築
       const effectiveShots = [];
       let pendingBunkerLie = false;
       for (let i = 0; i < seq.length; i++) {
@@ -14556,80 +13894,20 @@ function renderHoleView() {
         effectiveShots.push({
           club: s.club,
           res: s.res || null,
-          isBunker: !!(s.isBunker || pendingBunkerLie),
-          lat: (typeof s.lat === 'number' && !isNaN(s.lat) && isFinite(s.lat)) ? s.lat : null,
-          lng: (typeof s.lng === 'number' && !isNaN(s.lng) && isFinite(s.lng)) ? s.lng : null,
-          timestamp: s.timestamp || null
+          isBunker: !!(s.isBunker || pendingBunkerLie)
         });
         pendingBunkerLie = false;
       }
 
-      if (!hasAnyCoord || existingShots.length === 0) {
-        // 座標がない場合は実打シーケンスから完全再構築（res, lat, lng, timestampも保持）
-        state.shotLogs[hIdx] = effectiveShots.map((s, idx) => ({
-          shotNum: idx + 1,
-          shotNumber: idx + 1,
-          club: s.club,
-          res: s.res || null,
-          lie: s.isBunker ? 'Bunker' : (s.club === 'PT' ? 'Green' : 'Fairway'),
-          lat: s.lat,
-          lng: s.lng,
-          timestamp: s.timestamp,
-          distance: null
-        }));
-      } else {
-        // 既にGPSやマップ上で打点（座標）が記録されている場合は、座標を壊さずに番手と評価のみ同期
-        for (let idx = 0; idx < effectiveShots.length; idx++) {
-          const s = effectiveShots[idx];
-          if (existingShots[idx]) {
-            existingShots[idx].club = s.club;
-            existingShots[idx].res = s.res || existingShots[idx].res || null;
-            if (s.isBunker) existingShots[idx].lie = 'Bunker';
-            else if (s.club === 'PT') existingShots[idx].lie = 'Green';
-            if (existingShots[idx].lat == null && s.lat != null) {
-              existingShots[idx].lat = s.lat;
-              existingShots[idx].lng = s.lng;
-            }
-            if (!existingShots[idx].timestamp && s.timestamp) {
-              existingShots[idx].timestamp = s.timestamp;
-            }
-          } else {
-            existingShots.push({
-              shotNum: idx + 1,
-              shotNumber: idx + 1,
-              club: s.club,
-              res: s.res || null,
-              lie: s.isBunker ? 'Bunker' : (s.club === 'PT' ? 'Green' : 'Fairway'),
-              lat: s.lat,
-              lng: s.lng,
-              timestamp: s.timestamp,
-              distance: null
-            });
-          }
-        }
-        state.shotLogs[hIdx] = existingShots;
-      }
-
-      // 座標が連続して存在する場合の推定飛距離自動算出（フェイルセーフ）
-      try {
-        if (state.shotLogs[hIdx] && state.shotLogs[hIdx].length > 1 && typeof calcDistanceYards === 'function') {
-          let prevCoordShot = null;
-          for (let sIdx = 0; sIdx < state.shotLogs[hIdx].length; sIdx++) {
-            const curShot = state.shotLogs[hIdx][sIdx];
-            if (curShot && typeof curShot.lat === 'number' && typeof curShot.lng === 'number' && !isNaN(curShot.lat) && !isNaN(curShot.lng)) {
-              if (prevCoordShot) {
-                const distYds = calcDistanceYards(prevCoordShot.lat, prevCoordShot.lng, curShot.lat, curShot.lng);
-                if (typeof distYds === 'number' && !isNaN(distYds)) {
-                  curShot.distance = distYds;
-                }
-              }
-              prevCoordShot = curShot;
-            }
-          }
-        }
-      } catch (distErr) {
-        console.warn('Shot distance calc error:', distErr);
-      }
+      // 後方互換用 shotLogs 同期
+      state.shotLogs[hIdx] = effectiveShots.map((s, idx) => ({
+        shotNum: idx + 1,
+        shotNumber: idx + 1,
+        club: s.club,
+        res: s.res || null,
+        lie: s.isBunker ? 'Bunker' : (s.club === 'PT' ? 'Green' : 'Fairway'),
+        distance: null
+      }));
 
       saveLocalStorage();
       if (typeof debouncedDraftSave === 'function') debouncedDraftSave(500);
@@ -14790,6 +14068,17 @@ function renderHoleView() {
     // ※スクリプト全体の全定数・全関数の評価完了後に確実に実行
     // =================================================================
     function initApp() {
+      // 🛡️ OSによるストレージ自動削除から保護
+      try {
+        if (navigator.storage && navigator.storage.persist) {
+          navigator.storage.persist().then(persisted => {
+            console.log('[Storage] Storage persisted:', persisted);
+          }).catch(err => {
+            console.warn('[Storage] Storage persist error:', err);
+          });
+        }
+      } catch (e) {}
+
       try { initAppDialog(); } catch (e) { console.error('initAppDialog error:', e); }
       try { initNetworkStatus(); } catch (e) { console.error('initNetworkStatus error:', e); }
       try { initEnvStatus(); } catch (e) { console.error('initEnvStatus error:', e); }
@@ -14892,9 +14181,8 @@ function renderHoleView() {
 
       try { setupEventListeners(); } catch (e) { console.error('setupEventListeners error:', e); }
       try { setupSwipeEvents(); } catch (e) { console.error('setupSwipeEvents error:', e); }
-      try { initShotTracer(); } catch (e) { console.error('initShotTracer error:', e); }
       try { renderHoleView(); } catch (e) { console.error('renderHoleView error:', e); }
-      try { updateGpsButtonsVisibility(); } catch (e) {}
+      try { updateStorageStatusUI(); } catch (e) {}
       try { updateOfflineSyncBanner(); } catch (e) { console.error('updateOfflineSyncBanner error:', e); }
       try {
         var isStandalone = (window.navigator.standalone === true) || 
@@ -14927,8 +14215,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.54 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.54 起動完了');
+            console.log('[ScoreRec] v1.0.55 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.55 起動完了');
           }
         }, 400);
       });
@@ -14936,8 +14224,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.54 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.54 起動完了');
+          console.log('[ScoreRec] v1.0.55 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.55 起動完了');
         }
       }, 400);
     }
