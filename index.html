@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.56</title>
+  <title>マイスコア v1.0.57</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1846,7 +1846,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.56</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.57</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -3400,7 +3400,7 @@
         if (type === 'club') {
           normClub = (typeof normalizeClubName === 'function') ? normalizeClubName(club) : club;
         }
-        let disp = item.display || normClub;
+        let disp = (type === 'club') ? normClub : (item.display || normClub);
         if (isBunker && !disp.includes('🏖️')) disp += ' 🏖️';
         return {
           type: type,
@@ -3419,8 +3419,9 @@
     var CLUB_SORT_MASTER = window.CLUB_SORT_MASTER = [
       '1W', '3W', '5W', '7W',
       '3H', '5H',
+      '4i', '5i', '6i', '7i', '8i', '9i',
       '4I', '5I', '6I', '7I', '8I', '9I',
-      'PW', 'AW', 'GW', 'SW', 'LW',
+      'W', 'PW', 'AW', 'GW', 'SW', 'LW',
       '48°', '50°', '52°', '54°', '56°', '58°', '60°',
       'ChipR',
       'PT'
@@ -3430,16 +3431,16 @@
     function normalizeClubName(clubStr) {
       if (!clubStr) return '';
       let c = String(clubStr).replace('🏖️', '').trim();
-      // 小文字アイアン表記 (5i, 6i, 7i, 8i, 9i)
-      c = c.replace(/^([4-9])i$/i, '$1I');
+      // アイアン表記 (4I〜9I / 4i〜9i -> 4i〜9i に統一)
+      c = c.replace(/^([4-9])i$/i, '$1i');
       // 度数表記のゆれ (50 -> 50°)
       if (/^(48|50|52|54|56|58|60)$/.test(c)) c = c + '°';
-      // 3番系ハイブリッド (3U, U3, 3H) -> 3H
-      if (c === '3U' || c === 'U3' || c === '3H') return '3H';
+      // 3番系ハイブリッド (3U, U3, H3, 3H) -> 3H
+      if (c === '3U' || c === 'U3' || c === 'H3' || c === '3H') return '3H';
       // 5番系ハイブリッド (5U, U5, H5, 5H) -> 5H
       if (c === '5U' || c === 'U5' || c === 'H5' || c === '5H') return '5H';
-      // W -> PW
-      if (c === 'W') return 'PW';
+      // ピッチングウェッジ (PW, W -> W に統一)
+      if (c === 'PW' || c === 'W') return 'W';
       return c;
     }
     window.normalizeClubName = normalizeClubName;
@@ -3453,7 +3454,7 @@
     window.getClubSortIndex = getClubSortIndex;
 
     // 🛰️ ショット入力・パレット用クラブマスター（愛用厳格13本・3H/5H表記対応）
-    var SHOT_CLUBS = window.SHOT_CLUBS = ['1W', '5W', '3H', '5H', '6I', '7I', '8I', '9I', 'PW', '50°', '54°', '58°', 'ChipR', 'PT'];
+    var SHOT_CLUBS = window.SHOT_CLUBS = ['1W', '5W', '5H', '6i', '7i', '8i', '9i', 'W', '50°', '54°', '58°', 'ChipR', 'PT'];
     var shotLinesLayer = null;
     var currentShotTracerHole = 0; // 0 to 17
     var currentSelectedClub = '1W';
@@ -9525,7 +9526,7 @@ function renderHoleView() {
       if (elBogeyOnSub) elBogeyOnSub.textContent = `成功 ${bogeyOnCount} / ${totalAnalyzedHoles} ホール`;
 
       // 3. メインエリア: 番手別・自動成長型ハイブリッド分析（ドリルダウン明細対応）
-      const DEFAULT_ORDER = ['1W', '5W', 'H5', '6I', '7I', '8I', '9I', 'W', '50°', '54°', '58°', 'ChipR', 'PT'];
+      const DEFAULT_ORDER = ['1W', '5W', '5H', '6i', '7i', '8i', '9i', 'W', '50°', '54°', '58°', 'ChipR', 'PT'];
       const clubStatsMap = {};
       let grandTotalShots = 0;
 
@@ -13896,8 +13897,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.56 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.56 起動完了');
+            console.log('[ScoreRec] v1.0.57 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.57 起動完了');
           }
         }, 400);
       });
@@ -13905,8 +13906,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.56 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.56 起動完了');
+          console.log('[ScoreRec] v1.0.57 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.57 起動完了');
         }
       }, 400);
     }
