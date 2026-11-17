@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.58</title>
+  <title>マイスコア v1.0.59</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1849,7 +1849,7 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.58</span></div>
+    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.59</span></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
@@ -1869,8 +1869,9 @@
   </div>
 
   <!-- ⚠️ ストレージ容量警告バナー -->
-  <div id="storageQuotaWarningBanner" style="display:none; background:#ff6b6b; color:#fff; font-size:12px; font-weight:bold; padding:8px 12px; text-align:center; border-radius:4px; margin:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
-    ⚠️ 端末ストレージ容量不足のため保存に失敗しました。不要なタブやブラウザデータを整理してください。
+  <div id="storageQuotaWarningBanner" style="display:none; background:#e03131; color:#fff; font-size:12px; font-weight:bold; padding:8px 32px 8px 12px; text-align:center; border-radius:4px; margin:6px 12px; box-shadow:0 2px 6px rgba(0,0,0,0.2); position:relative;">
+    <span id="storageQuotaWarningText">⚠️ 端末ストレージ容量不足のため保存に失敗しました。不要なタブやブラウザデータを整理してください。</span>
+    <button type="button" onclick="hideStorageQuotaWarning();" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.25); border:none; color:#fff; border-radius:3px; padding:2px 7px; font-size:12px; cursor:pointer;" title="閉じる">✕</button>
   </div>
 
   <div id="toastMessage" class="toast"></div>
@@ -3235,15 +3236,21 @@
               ls.setItem(key, strVal);
               hideStorageQuotaWarning();
             } catch (quotaErr) {
-              console.warn('[safeStorage] Quota exceeded. Purging MyScore_v1_Analytics...', quotaErr);
+              console.warn(`[safeStorage] Quota exceeded for key: "${key}". Purging MyScore_v1_Analytics...`, quotaErr);
               try {
                 ls.removeItem('MyScore_v1_Analytics');
-                ls.setItem(key, strVal);
-                hideStorageQuotaWarning();
-                console.log('[safeStorage] Successfully saved after purging MyScore_v1_Analytics.');
+                if (key !== 'MyScore_v1_Analytics') {
+                  ls.setItem(key, strVal);
+                  hideStorageQuotaWarning();
+                  console.log(`[safeStorage] Successfully saved "${key}" after purging MyScore_v1_Analytics.`);
+                } else {
+                  console.warn('[safeStorage] Analytics cache exceeds remaining quota. Kept in memory only.');
+                }
               } catch (retryErr) {
-                console.error('[safeStorage] Storage quota critical failure:', retryErr);
-                showStorageQuotaWarning();
+                console.error(`[safeStorage] Storage quota critical failure on key "${key}":`, retryErr);
+                if (key !== 'MyScore_v1_Analytics') {
+                  showStorageQuotaWarning(key);
+                }
               }
             }
           }
@@ -3267,14 +3274,21 @@
       }
     };
 
-    function showStorageQuotaWarning() {
+    function showStorageQuotaWarning(failedKey) {
       const banner = document.getElementById('storageQuotaWarningBanner');
+      const textEl = document.getElementById('storageQuotaWarningText');
+      if (textEl) {
+        const keyText = failedKey ? `（キー: ${failedKey}）` : '';
+        textEl.textContent = `⚠️ 端末ストレージ容量不足のため保存に失敗しました${keyText}。不要なタブやブラウザデータを整理してください。`;
+      }
       if (banner) banner.style.display = 'block';
     }
     function hideStorageQuotaWarning() {
       const banner = document.getElementById('storageQuotaWarningBanner');
       if (banner) banner.style.display = 'none';
     }
+    window.showStorageQuotaWarning = showStorageQuotaWarning;
+    window.hideStorageQuotaWarning = hideStorageQuotaWarning;
 
     function getTodayJstString() {
       try {
@@ -10540,6 +10554,89 @@ function renderHoleView() {
       sendAccessLog('分析ダッシュボード表示', optPlayerName || '桑木', isAnalyticsShareMode ? '共有モード' : '本体モード');
     }
 
+    // 🪶 分析データキャッシュ軽量化ヘルパー（localStorage容量超過・QuotaExceeded対策）
+    function createLightweightAnalyticsCache(data) {
+      if (!data || typeof data !== 'object') return data;
+      try {
+        const light = Object.assign({}, data);
+
+        const slimRound = (r, keepDetail) => {
+          if (!r || typeof r !== 'object') return r;
+          const slim = {
+            roundId: r.roundId,
+            courseId: r.courseId,
+            rawDate: r.rawDate,
+            date: r.date,
+            courseName: r.courseName,
+            frontHalf: r.frontHalf,
+            backHalf: r.backHalf,
+            half: r.half,
+            tee: r.tee,
+            green: r.green,
+            weather: r.weather,
+            wind: r.wind,
+            memo: r.memo,
+            gross: r.gross,
+            ownerGross: r.ownerGross,
+            putts: r.putts,
+            outVal: r.outVal,
+            inVal: r.inVal,
+            fwRate: r.fwRate,
+            obs: r.obs,
+            penalties: r.penalties,
+            bunkers: r.bunkers,
+            tomodachiPoints: r.tomodachiPoints,
+            isHalfRound: r.isHalfRound,
+            partners: Array.isArray(r.partners) ? r.partners.map(p => ({
+              name: p.name,
+              gross: p.gross,
+              putts: p.putts,
+              points: p.points
+            })) : []
+          };
+
+          if (keepDetail) {
+            // 直近ラウンドはドリルダウンや番手分析のため holeList / shotLog を保持
+            if (Array.isArray(r.holeList)) slim.holeList = r.holeList;
+            if (Array.isArray(r.shotLog)) slim.shotLog = r.shotLog;
+          } else {
+            // 古いラウンドは推移や18H完走判定に必要な最小限の holeList のみ保持し、巨大な shotLog は除外
+            if (Array.isArray(r.holeList)) {
+              slim.holeList = r.holeList.map(h => ({
+                par: Number(h.par) || 4,
+                score: Number(h.score) || 0,
+                diff: Number(h.diff) || 0,
+                putts: (h.putts !== null && h.putts !== undefined && h.putts !== '') ? Number(h.putts) : null
+              }));
+            }
+          }
+          return slim;
+        };
+
+        if (Array.isArray(data.recentRounds)) {
+          light.recentRounds = data.recentRounds.slice(0, 20).map(r => slimRound(r, true));
+        }
+        if (Array.isArray(data.allRounds)) {
+          light.allRounds = data.allRounds.map((r, idx) => slimRound(r, idx < 15));
+        }
+
+        return light;
+      } catch (err) {
+        console.warn('[Analytics] createLightweightAnalyticsCache fallback:', err);
+        return data;
+      }
+    }
+
+    function saveAnalyticsDataCache(data) {
+      if (!data) return;
+      try {
+        const light = createLightweightAnalyticsCache(data);
+        safeStorage.setItem('MyScore_v1_Analytics', JSON.stringify(light));
+      } catch (e) {
+        console.warn('[Analytics] Failed to save lightweight cache:', e);
+      }
+    }
+
     function fetchAnalyticsData(reqPlayerName, reqPeriod, reqCourse) {
       const refreshBtn = document.getElementById('btnRefreshAnalytics');
       if (refreshBtn) refreshBtn.textContent = '更新中...';
@@ -10576,7 +10673,7 @@ function renderHoleView() {
             if (refreshBtn) refreshBtn.textContent = '🔄 更新';
             if (res && res.success) {
               analyticsDataCache = res;
-              safeStorage.setItem('MyScore_v1_Analytics', JSON.stringify(res));
+              saveAnalyticsDataCache(res);
               renderAnalyticsUI(res);
               showToast((res.targetPlayer || 'プレイヤー') + 'の分析データを更新しました');
             } else {
@@ -10607,7 +10704,7 @@ function renderHoleView() {
             if (refreshBtn) refreshBtn.textContent = '🔄 更新';
             if (res && res.success) {
               analyticsDataCache = res;
-              safeStorage.setItem('MyScore_v1_Analytics', JSON.stringify(res));
+              saveAnalyticsDataCache(res);
               renderAnalyticsUI(res);
               showToast((res.targetPlayer || 'プレイヤー') + 'の分析データを更新しました');
             } else {
@@ -13911,8 +14008,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.58 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.58 起動完了');
+            console.log('[ScoreRec] v1.0.59 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.59 起動完了');
           }
         }, 400);
       });
@@ -13920,8 +14017,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.58 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.58 起動完了');
+          console.log('[ScoreRec] v1.0.59 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.59 起動完了');
         }
       }, 400);
     }
