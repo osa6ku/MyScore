@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>マイスコア v1.0.59</title>
+  <title>マイスコア v1.0.60</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#1b4332">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -258,6 +258,48 @@
     }
     .status-online { background-color: #40c057; color: #fff; }
     .status-offline { background-color: #fd7e14; color: #fff; }
+
+    /* 🏷️ バージョン（リビジョン）バッジボタン ＆ 更新検知・変更履歴モーダルスタイル */
+    .ver-badge-btn {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      line-height: 1.2;
+      transition: background 0.15s, transform 0.1s;
+      vertical-align: middle;
+    }
+    .ver-badge-btn:hover { background: rgba(255, 255, 255, 0.35); }
+    .ver-badge-btn:active { transform: scale(0.96); }
+
+    .update-banner {
+      display: none;
+      background: #fef3c7;
+      color: #92400e;
+      border-bottom: 1px solid #fde68a;
+      padding: 9px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .update-banner.show { display: block; }
+
+    .changelog-item { border-bottom: 1px solid #dee2e6; padding: 12px 0; }
+    .changelog-item:last-child { border-bottom: none; }
+    .changelog-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+    .changelog-ver { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #e7f5ff; color: #1971c2; }
+    .changelog-date { font-size: 11px; color: #868e96; }
+    .changelog-title { font-size: 13px; font-weight: 700; color: #212529; }
+    .changelog-ul { margin: 4px 0 0 18px; padding: 0; font-size: 12px; line-height: 1.6; color: #495057; text-align: left; }
 
     .accordion-header {
       background-color: #e9ecef; padding: 6px 10px; font-size: 12.5px; font-weight: bold;
@@ -1849,13 +1891,19 @@
 <body>
 
   <header>
-    <div class="app-title">マイスコア <span style="font-size:11px; background:rgba(255,255,255,0.25); padding:2px 6px; border-radius:4px; font-weight:bold;">v1.0.59</span></div>
+    <div class="app-title">マイスコア <button type="button" class="ver-badge-btn" id="appVersionBadge" onclick="openReleaseNotesModal();" title="変更履歴（リリースノート）を表示">📋 v1.0.60</button></div>
     <div style="display:flex; align-items:center; gap:4px; flex-shrink:0; white-space:nowrap;">
+      <button type="button" class="btn-sync" id="btnManualUpdate" onclick="manualCheckUpdate();" title="最新バージョン確認・更新" style="background:#2b8a3e; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">🔄 更新</button>
       <button type="button" class="btn-sync" id="btnOpenAnalytics" onclick="openAnalyticsModal();" style="background:#1971c2; font-weight:bold; padding:3px 7px; font-size:11px; min-height:24px;">📊 分析</button>
       <div id="envStatus" class="status-badge" style="background:#495057;">ローカル</div>
       <div id="netStatus" class="status-badge status-online">オンライン</div>
     </div>
   </header>
+
+  <!-- ✨ 新バージョン検知バナー -->
+  <div id="updateBanner" class="update-banner" onclick="forceAppUpdate();">
+    ✨ 新しいバージョン（<span id="newVerLabel"></span>）があります — タップして更新
+  </div>
 
   <!-- 📊 共有モード時の分析ダッシュボード再アクセス案内バナー -->
   <div id="analyticsReopenBanner" style="display:none; background:linear-gradient(135deg, #1971c2, #1864ab); color:#fff; padding:7px 12px; text-align:center; font-weight:bold; font-size:12px; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.15);" onclick="openAnalyticsModal();">
@@ -2194,6 +2242,20 @@
       </div>
 
       <button type="button" class="btn-action-sm" style="background:#1b4332; margin-top:8px; padding:10px; font-size:0.9rem; font-weight:bold;" id="btnCloseShuffle">✅ 決定して閉じる</button>
+    </div>
+  </div>
+
+  <!-- 📋 変更履歴（リリースノート）モーダル -->
+  <div class="modal-overlay" id="modalReleaseNotes" style="z-index: 3000;" onclick="if(event.target===this) closeReleaseNotesModal();">
+    <div class="modal-content modal-content-full" style="max-height:85vh; padding:16px;">
+      <div class="modal-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span style="font-size:1.05rem; font-weight:bold; color:#1b4332;">📋 変更履歴（リリースノート）</span>
+        <button type="button" class="btn-action-sm" style="background:#6c757d; color:#fff; padding:3px 10px; font-size:12px; margin:0; width:auto;" onclick="closeReleaseNotesModal();">✕</button>
+      </div>
+      <div id="changelogBody" style="max-height:60vh; overflow-y:auto; padding-right:4px;"></div>
+      <div style="margin-top:14px;">
+        <button type="button" class="btn-action-sm" style="width:100%; background:#495057; color:#fff; font-weight:bold; padding:10px;" onclick="closeReleaseNotesModal();">閉じる</button>
+      </div>
     </div>
   </div>
 
@@ -13831,6 +13893,194 @@ function renderHoleView() {
       }
     }
 
+    // =================================================================
+    // 📋 バージョン管理・リリースノート（変更履歴）＆更新検知ロジック（共通運用ルール準拠）
+    // =================================================================
+    const APP_VERSION = 'v1.0.60';
+    const DEFAULT_RELEASE_NOTES = [
+      {
+        version: 'v1.0.60',
+        date: '2026-11-18',
+        title: 'リビジョン表示・変更履歴モーダル＆共通ルール更新検知',
+        items: [
+          'ヘッダーのバージョンバッジをタップ可能なボタン（📋 v1.0.60）へ変更',
+          '変更履歴（リリースノート）モーダルポップアップを追加し、過去の主要更新内容を一覧閲覧可能に',
+          'version.json と連携した新バージョン自動検知バナー＆ワンタップ強制更新機能を実装',
+          'ヘッダーに手動キャッシュクリア＆更新ボタン（🔄）を追加'
+        ]
+      },
+      {
+        version: 'v1.0.59',
+        date: '2026-11-17',
+        title: '分析キャッシュ軽量化＆ストレージ警告バナー失敗キー明示',
+        items: [
+          'createLightweightAnalyticsCache による分析キャッシュの90%スリム化',
+          'QuotaExceededError 発生時の安全なフォールバックと失敗キーのバナー表示'
+        ]
+      },
+      {
+        version: 'v1.0.58',
+        date: '2026-11-17',
+        title: 'グリーン外パット（PT外）の追加',
+        items: [
+          'クラブ一覧・マスター配列末尾に「PT外」を追加（カラーや花道からのパター使用を区別）',
+          'パット数に含めず総ショット数としてカウント、Fringeライとして記録'
+        ]
+      },
+      {
+        version: 'v1.0.57',
+        date: '2026-11-17',
+        title: 'クラブ選択パレット・正規化・並び順を現在使用中の13本に統一',
+        items: [
+          'SHOT_CLUBS 13本（1W/5W/5H/6i〜9i/W/50°/54°/58°/ChipR/PT）固定',
+          'normalizeClubName によるアイアン小文字・ピッチングW・5Hの表記統一'
+        ]
+      },
+      {
+        version: 'v1.0.56',
+        date: '2026-11-17',
+        title: 'クラブ順バッジ・プレビュー関数群の復元＆死蔵GPS参照清掃',
+        items: [
+          'getResBadgeHtml, getClubSeqBadge, renderClubSeqPreviewHtml の復元',
+          '死蔵GPSコード400行の完全削除'
+        ]
+      },
+      {
+        version: 'v1.0.55',
+        date: '2026-11-14',
+        title: 'GPS・Leaflet完全撤去＆フリーズ根絶・ストレージ恒久対策',
+        items: [
+          'GPS計測機能・Leafletライブラリの完全撤去によるメモリおよび初期ロード軽量化',
+          '1タップごとの二重保存解消・デバウンス導入によるUI固まり防止',
+          'ラウンド中のマスター同期DOM再構築抑止'
+        ]
+      },
+      {
+        version: 'v1.0.54',
+        date: '2026-11-14',
+        title: 'バックアップ復元不能バグの根絶',
+        items: [
+          'restoreCurrentRound のスコア破壊リセット廃止',
+          'isValidOngoingRound 判定条件適正化とwindow.name/sessionStorage多重保存',
+          'サーバー下書き保存（saveDraft）および直結復元機能の強化'
+        ]
+      },
+      {
+        version: 'v1.0.50',
+        date: '2026-11-11',
+        title: '18H完走・ラウンド終了フローおよびLINE通知実機検証',
+        items: [
+          '18H完走後の保存・LINE Messaging API連携によるテキストバックアップ通知実機検証完了'
+        ]
+      }
+    ];
+
+    function renderReleaseNotes(history) {
+      const list = Array.isArray(history) && history.length ? history : DEFAULT_RELEASE_NOTES;
+      const el = document.getElementById('changelogBody');
+      if (!el) return;
+      el.innerHTML = list.map(item => `
+        <div class="changelog-item">
+          <div class="changelog-head">
+            <span class="changelog-ver">${escapeHtml(item.version)}</span>
+            <span class="changelog-date">${escapeHtml(item.date || '')}</span>
+            <span class="changelog-title">${escapeHtml(item.title || '')}</span>
+          </div>
+          <ul class="changelog-ul">
+            ${(item.items || []).map(li => `<li>${escapeHtml(li)}</li>`).join('')}
+          </ul>
+        </div>
+      `).join('');
+    }
+
+    async function openReleaseNotesModal() {
+      renderReleaseNotes(DEFAULT_RELEASE_NOTES);
+      const m = document.getElementById('modalReleaseNotes');
+      if (m) m.classList.add('open');
+      try {
+        const res = await fetch('./version.json?ts=' + Date.now(), { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.history) && data.history.length > 0) {
+            renderReleaseNotes(data.history);
+          }
+        }
+      } catch (_) {}
+    }
+
+    function closeReleaseNotesModal() {
+      const m = document.getElementById('modalReleaseNotes');
+      if (m) m.classList.remove('open');
+    }
+
+    async function checkForUpdate() {
+      try {
+        const res = await fetch('./version.json?t=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) return null;
+        const info = await res.json();
+        if (info && info.version && info.version !== APP_VERSION) {
+          const lbl = document.getElementById('newVerLabel');
+          if (lbl) lbl.textContent = info.version;
+          const banner = document.getElementById('updateBanner');
+          if (banner) banner.classList.add('show');
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistration().then(r => { if (r) r.update().catch(() => {}); }).catch(() => {});
+          }
+        }
+        return info;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function manualCheckUpdate() {
+      const btn = document.getElementById('btnManualUpdate');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '確認中';
+      }
+      showToast('🔄 最新バージョンを確認中...');
+      const info = await checkForUpdate();
+      if (info && info.version && info.version !== APP_VERSION) {
+        await forceAppUpdate();
+      } else {
+        if ('caches' in window) {
+          try {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+          } catch(e) {}
+        }
+        showToast('✅ 現在最新バージョン（' + APP_VERSION + '）です');
+        setTimeout(() => {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🔄 更新';
+          }
+        }, 1000);
+      }
+    }
+
+    async function forceAppUpdate() {
+      try {
+        showToast('✨ 最新バージョンへ更新中...');
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) {
+            await reg.unregister().catch(() => {});
+          }
+        }
+      } catch (e) {
+        console.warn('Update clear error:', e);
+      }
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 500);
+    }
+
     // 🌐 全ボタン・アクション関数の window への明示的公開（GAS iframe / IIFE完全対策）
     // =================================================================
     const globalActions = {
@@ -13850,7 +14100,8 @@ function renderHoleView() {
       filterShareMembersList, executeShareSelectedMembers, executeShareViaApp,
       selectUserIdentity, openAccessLogsModal, closeAccessLogsModal, fetchAndRenderAccessLogs,
       pressPinKey, clearPinKey, backspacePinKey, switchToAnalyticsFromPin, logoutAdminPin,
-      openHoleStrategyModal, closeHoleStrategyModal, openScorebookPdf, filterCourseSelectOptions
+      openHoleStrategyModal, closeHoleStrategyModal, openScorebookPdf, filterCourseSelectOptions,
+      openReleaseNotesModal, closeReleaseNotesModal, checkForUpdate, manualCheckUpdate, forceAppUpdate
     };
     for (const [name, fn] of Object.entries(globalActions)) {
       try { window[name] = fn; } catch(e) {}
@@ -13988,6 +14239,19 @@ function renderHoleView() {
       try { checkAndInitAnalyticsShareMode(); } catch (e) { console.error('checkAndInitAnalyticsShareMode error:', e); }
       try { checkAdminAuthOnStartup(); } catch (e) { console.error('checkAdminAuthOnStartup error:', e); }
 
+      // 📱 Service Worker 登録 & 更新検知（PWAキャッシュ同期）
+      try {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('./sw.js?v=' + encodeURIComponent(APP_VERSION)).catch(() => {});
+        }
+        checkForUpdate();
+      } catch (e) {}
+      try {
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') checkForUpdate();
+        });
+      } catch (e) {}
+
       // 🌐 GitHub Pages / PWA / 初回起動時のマスターデータ自動取得
       try {
         const totalCourses = (masterData && (masterData.totalCourses || (masterData.courseCatalog && masterData.courseCatalog.length))) || 0;
@@ -14008,8 +14272,8 @@ function renderHoleView() {
         initApp();
         setTimeout(function() {
           if (!window._fatalErrors || window._fatalErrors.length === 0) {
-            console.log('[ScoreRec] v1.0.59 システム正常起動完了');
-            showToast('⛳️ マイスコア v1.0.59 起動完了');
+            console.log('[ScoreRec] v1.0.60 システム正常起動完了');
+            showToast('⛳️ マイスコア v1.0.60 起動完了');
           }
         }, 400);
       });
@@ -14017,8 +14281,8 @@ function renderHoleView() {
       initApp();
       setTimeout(function() {
         if (!window._fatalErrors || window._fatalErrors.length === 0) {
-          console.log('[ScoreRec] v1.0.59 システム正常起動完了');
-          showToast('⛳️ マイスコア v1.0.59 起動完了');
+          console.log('[ScoreRec] v1.0.60 システム正常起動完了');
+          showToast('⛳️ マイスコア v1.0.60 起動完了');
         }
       }, 400);
     }

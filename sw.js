@@ -1,4 +1,4 @@
-const CACHE_NAME = 'myscore-pwa-v1.0.59';
+const CACHE_NAME = 'myscore-pwa-v1.0.60';
 const ASSETS = [
   './',
   './index.html',
@@ -26,6 +26,12 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  // version.json は常にネットワークから直接取得（キャッシュしない）
+  if (url.pathname.endsWith('version.json')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
